@@ -4,8 +4,8 @@ title: 추첨 시스템 앱용 API 구현
 status: Done
 assignee:
   - '@seok'
-created_date: '2025-08-19 08:16'
-updated_date: '2025-08-19 08:18'
+created_date: '2025-08-18 03:32'
+updated_date: '2025-08-19 16:45'
 labels:
   - lottery
   - api

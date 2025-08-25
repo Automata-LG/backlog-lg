@@ -4,8 +4,8 @@ title: 추첨 시스템 추가 개선 작업
 status: Done
 assignee:
   - '@seok'
-created_date: '2025-08-18 03:32'
-updated_date: '2025-08-19 16:45'
+created_date: '2025-08-19 08:16'
+updated_date: '2025-08-19 08:18'
 labels:
   - backend
   - database

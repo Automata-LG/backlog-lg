@@ -1,5 +1,5 @@
 ---
-id: task-010
+id: task-008
 title: 추첨 시스템 엑셀 다운로드 수정 & 파일 업로드 용량 증가
 status: Done
 assignee:
