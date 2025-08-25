@@ -59,6 +59,7 @@ erDiagram
         string title
         string[] images
         string instructions
+        json prizes
         datetime displayStartAt
         datetime displayEndAt
         string adminId FK
@@ -179,6 +180,7 @@ model LotteryResult {
   title          String    @db.VarChar(255)
   images         String[]  @db.VarChar(2048)
   instructions   String?
+  prizes         Json      // 계산된 경품 배열 [{prizeName: string, winnerCount: number}]
   displayStartAt DateTime? // 결과 노출 시작일
   displayEndAt   DateTime? // 결과 노출 종료일
 
@@ -237,6 +239,7 @@ model LotteryResult {
 ### 4. LotteryResult (추첨 결과 발표)
 
 - 당첨자 발표 페이지 정보
+- `prizes`: 결과 생성 시 자동 계산되어 저장되는 필수 필드 (기본 가나다순, 순서 지정 가능)
 - 결과 노출 기간만 관리 (응모 기간은 Lottery로 이동)
 - 여러 추첨 이력(LotteryHist)을 하나의 결과로 통합하여 발표 (N:M 관계)
 - `link` 필드 제거됨
