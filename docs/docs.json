@@ -17,8 +17,21 @@
             "pages": ["guides/emapp-system", "guides/emapp-api-guidelines"]
           },
           {
+            "group": "예약 시스템",
+            "pages": [
+              "reservation-system/reservation-erd",
+              "reservation-system/reservation-fsm",
+              "reservation-system/reservation-types",
+              "reservation-system/reservation-api-reference"
+            ]
+          },
+          {
             "group": "추첨 시스템",
-            "pages": ["lottery-system/lottery-erd", "lottery-system/lottery-api-reference", "lottery-system/lottery-future-improvements"]
+            "pages": [
+              "lottery-system/lottery-erd",
+              "lottery-system/lottery-api-reference",
+              "lottery-system/lottery-future-improvements"
+            ]
           }
         ]
       }
