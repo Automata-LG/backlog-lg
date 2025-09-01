@@ -23,7 +23,9 @@
               "reservation-system/reservation-fsm",
               "reservation-system/reservation-types",
               "reservation-system/reservation-api-reference",
-              "reservation-system/sks-restaurant-prd"
+              "reservation-system/sks-restaurant-prd",
+              "reservation-system/sks-restaurant-app-ia",
+              "reservation-system/sks-restaurant-admin-ia"
             ]
           },
           {
