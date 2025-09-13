@@ -23,6 +23,8 @@
               "reservation-system/reservation-fsm",
               "reservation-system/reservation-types",
               "reservation-system/reservation-api-reference",
+              "reservation-system/fraci-ordering-guide",
+              "reservation-system/sks-restaurant-raw",
               "reservation-system/sks-restaurant-prd",
               "reservation-system/sks-restaurant-integration",
               "reservation-system/sks-restaurant-app-ia",
