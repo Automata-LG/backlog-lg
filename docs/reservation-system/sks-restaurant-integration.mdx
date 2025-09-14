@@ -106,27 +106,57 @@ const restaurantConfirm: IConfirmConfig = {
 };
 ```
 
-### 2.2 3계층 구조 (Host → Space → Unit)
+### 2.2 4계층 구조 (Host → Space/Section → Unit)
 
-<Card title="3계층 구조" icon="layer-group">
+<Card title="4계층 구조" icon="layer-group">
   - **Host**: 최상위 시설 (다이닝, 카페, 아트센터)
-  - **Space**: 중간 구역 (홀, 룸, 테라스, 좌석구역)
-  - **Unit**: 최소 예약 단위 (테이블, 좌석)
+  - **Space**: 정보성 공간 (UI 표시용 - 메인홀, 다이닝룸)
+  - **Section**: 운영 단위 (실제 예약 관리 - 1층, 2층, 홀, 룸)
+  - **Unit**: 물리적 단위 (테이블, 좌석)
 </Card>
+
+<Note>
+  **Section과 Unit의 선택적 사용**
+  - 둘 다 선택적이며 예약 유형에 따라 유연하게 사용
+  - 자유석: Section/Unit 미지정
+  - 구역 지정: Section만 지정
+  - 지정석: Section + Unit 지정
+</Note>
+
+#### ReservationSection (신규)
+```prisma
+model ReservationSection {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String @db.VarChar(35)
+  description String
+  metadata    Json?
+
+  host         ReservationHost   @relation(fields: [hostId], references: [id])
+  hostId       String            @db.Uuid
+  units        ReservationUnit[]
+  reservations Reservation[]
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map(name: "reservationSection")
+}
+```
 
 #### ReservationUnit (신규)
 ```prisma
 model ReservationUnit {
   id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sn          String @unique @db.VarChar(50)
+  code        String @unique @db.VarChar(20)
   name        String @db.VarChar(35)
   description String
   minCapacity Int    @default(0)
   maxCapacity Int    @default(0)
   metadata    Json?
 
-  space        ReservationSpace @relation(fields: [spaceId], references: [id])
-  spaceId      String           @db.Uuid
+  section      ReservationSection @relation(fields: [sectionId], references: [id])
+  sectionId    String             @db.Uuid
   reservations Reservation[]
 
   index     String
@@ -134,32 +164,32 @@ model ReservationUnit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([spaceId, index])
+  @@unique([sectionId, index])
   @@map(name: "reservationUnit")
 }
 ```
 
-#### ReservationSpace (기존, 확장)
+#### ReservationSpace (정보성)
 ```prisma
 model ReservationSpace {
   // 기존 필드...
-  units        ReservationUnit[]  // Space가 포함하는 Unit들
-  reservations Reservation[]      // Space에서 발생한 예약들
+  contents ReservationContent[]  // Space는 Content 표시 위치만 나타냄
+  // units, reservations 관계 제거 (Section으로 이동)
 }
 ```
 
-#### Reservation 테이블 (기존, 확장)
+#### Reservation (기존, 확장)
 ```prisma
 model Reservation {
   // 기존 필드...
   requestNote    String?  // 고객 요청사항
   additionalInfo Json?    // 추가 정보 (vehicleNo 등)
-  
-  // 추가된 관계들
-  space        ReservationSpace?   @relation(fields: [spaceId], references: [id])
-  spaceId      String?             @db.Uuid
-  unit         ReservationUnit?    @relation(fields: [unitId], references: [id])
-  unitId       String?             @db.Uuid
+
+  // 추가된 관계들 (모두 선택적)
+  section      ReservationSection?  @relation(fields: [sectionId], references: [id])
+  sectionId    String?              @db.Uuid
+  unit         ReservationUnit?     @relation(fields: [unitId], references: [id])
+  unitId       String?              @db.Uuid
 }
 ```
 
@@ -358,7 +388,7 @@ async function notifyWaitingList(cancelledReservation: IReservation) {
     status: 'WAITING',
     groupSize: { lte: cancelledReservation.groupSize }
   });
-  
+
   // 등급별 우선순위 + 등록 시간 순 정렬
   const sortedList = waitingList.sort((a, b) => {
     const gradeOrder = { AS00: 0, AS01: 1, AS02: 2, AS03: 3, AS04: 4, AS05: 5 };
@@ -367,14 +397,14 @@ async function notifyWaitingList(cancelledReservation: IReservation) {
     }
     return a.registeredAt.getTime() - b.registeredAt.getTime();
   });
-  
+
   // 상위 N명에게 알림 (보통 3-5명)
   const notifyCount = Math.min(5, sortedList.length);
   for (let i = 0; i < notifyCount; i++) {
     await sendVacancyNotification(sortedList[i]);
     await updateWaitingStatus(sortedList[i].id, 'NOTIFIED');
   }
-  
+
   // 24시간 후 만료 처리 스케줄링
   scheduleExpiration(sortedList.slice(0, notifyCount), 24 * 60 * 60 * 1000);
 }
@@ -541,47 +571,63 @@ async function validateReservation(input, restriction: IRestrictionConfig) {
 }
 ```
 
-### Space/Unit 기반 가용성 검증
+### Section/Unit 기반 가용성 검증
 ```typescript
 async function validateResourceAvailability(
   reservationRequest: any,
-  spaceId: string
+  sectionId?: string,
+  requireUnit: boolean = false
 ) {
-  // 1. 해당 공간의 Unit 조회
-  const space = await db.reservationSpace.findUnique({
-    where: { id: spaceId },
-    include: {
-      units: {
-        where: { isActive: true }
+  // 1. Section이 지정된 경우
+  if (sectionId) {
+    const section = await db.reservationSection.findUnique({
+      where: { id: sectionId },
+      include: {
+        units: {
+          where: { isActive: true }
+        }
       }
-    }
-  });
-
-  // 2. 요청 인원에 맞는 Unit 찾기
-  const availableUnit = space?.units
-    .find(unit => {
-      return reservationRequest.guests >= unit.minCapacity && 
-             reservationRequest.guests <= unit.maxCapacity;
     });
 
-  if (!availableUnit) {
-    throw new Error('적합한 테이블/좌석이 없습니다');
-  }
-
-  // 3. 해당 Unit의 예약 상태 확인
-  const existingReservation = await db.reservation.findFirst({
-    where: {
-      unitId: availableUnit.id,
-      date: reservationRequest.date,
-      status: { in: ['PENDING', 'CONFIRMED'] }
+    if (!section) {
+      throw new Error('유효하지 않은 섹션입니다');
     }
-  });
 
-  if (existingReservation) {
-    throw new Error('이미 예약된 테이블/좌석입니다');
+    // 2. Unit 할당이 필요한 경우
+    if (requireUnit) {
+      // 요청 인원에 맞는 Unit 찾기
+      const availableUnit = section.units
+        .find(unit => {
+          return reservationRequest.guests >= unit.minCapacity &&
+                 reservationRequest.guests <= unit.maxCapacity;
+        });
+
+      if (!availableUnit) {
+        throw new Error('적합한 테이블/좌석이 없습니다');
+      }
+
+      // 해당 Unit의 예약 상태 확인
+      const existingReservation = await db.reservation.findFirst({
+        where: {
+          unitId: availableUnit.id,
+          date: reservationRequest.date,
+          status: { in: ['PENDING', 'CONFIRMED'] }
+        }
+      });
+
+      if (existingReservation) {
+        throw new Error('이미 예약된 테이블/좌석입니다');
+      }
+
+      return { section, unit: availableUnit };
+    }
+
+    // Section만 사용 (Unit 미할당)
+    return { section, unit: null };
   }
 
-  return availableUnit;
+  // 3. Section/Unit 모두 미지정 (자유 예약)
+  return { section: null, unit: null };
 }
 ```
 
@@ -614,50 +660,50 @@ async function validateResourceAvailability(
 
 ## 10. 구현 예시
 
-### Space/Unit 구성 예시
+### Section/Unit 구성 및 예약 타입별 예시
 
 <CardGroup cols={2}>
-  <Card title="레스토랑" icon="utensils">
+  <Card title="레스토랑 Section/Unit 구성" icon="utensils">
     ```typescript
-    // 레스토랑 Space/Unit 구성
-    const restaurantSpaces = [
+    // 레스토랑 Section/Unit 구성
+    const restaurantSections = [
       {
         name: "룸",
         units: [
-          { sn: "R1", name: "룸 테이블 1", minCapacity: 4, maxCapacity: 8 }
+          { code: "R1", name: "룸 테이블 1", minCapacity: 4, maxCapacity: 8 }
         ]
       },
       {
         name: "홀",
         units: [
-          { sn: "H4-1", name: "홀 4인석 1", minCapacity: 2, maxCapacity: 4 },
-          { sn: "H4-2", name: "홀 4인석 2", minCapacity: 2, maxCapacity: 4 },
-          { sn: "H6-1", name: "홀 6인석 1", minCapacity: 5, maxCapacity: 6 },
-          { sn: "H6-2", name: "홀 6인석 2", minCapacity: 5, maxCapacity: 6 }
+          { code: "H4-1", name: "홀 4인석 1", minCapacity: 2, maxCapacity: 4 },
+          { code: "H4-2", name: "홀 4인석 2", minCapacity: 2, maxCapacity: 4 },
+          { code: "H6-1", name: "홀 6인석 1", minCapacity: 5, maxCapacity: 6 },
+          { code: "H6-2", name: "홀 6인석 2", minCapacity: 5, maxCapacity: 6 }
         ]
       }
     ];
     ```
   </Card>
 
-  <Card title="아트센터" icon="theater-masks">
+  <Card title="아트센터 Section/Unit 구성" icon="theater-masks">
     ```typescript
-    // 아트센터 Space/Unit 구성
-    const artCenterSpaces = [
+    // 아트센터 Section/Unit 구성
+    const artCenterSections = [
       {
-        name: "VIP석",
-        units: Array(50).fill(null).map((_, i) => ({
-          sn: `VIP-${i+1}`,
-          name: `VIP석 ${i+1}`,
+        name: "1층",
+        units: Array(100).fill(null).map((_, i) => ({
+          code: `1F-${i+1}`,
+          name: `1층 ${i+1}번`,
           minCapacity: 1,
           maxCapacity: 1
         }))
       },
       {
-        name: "R석",
-        units: Array(100).fill(null).map((_, i) => ({
-          sn: `R-${i+1}`,
-          name: `R석 ${i+1}`,
+        name: "2층",
+        units: Array(50).fill(null).map((_, i) => ({
+          code: `2F-${i+1}`,
+          name: `2층 ${i+1}번`,
           minCapacity: 1,
           maxCapacity: 1
         }))
@@ -666,6 +712,58 @@ async function validateResourceAvailability(
     ```
   </Card>
 </CardGroup>
+
+### 예약 타입별 사용 예시
+
+<Tabs>
+  <Tab title="자유 예약">
+    ```typescript
+    // 자유석 공연 - Section/Unit 모두 미지정
+    const freeSeatingReservation = {
+      timeSlotId: "timeslot-uuid",
+      sectionId: null,  // 섹션 미지정
+      unitId: null,     // 유닛 미지정
+      groupSize: 2,
+      // 입장 시 현장에서 자리 선택
+    };
+    ```
+  </Tab>
+
+  <Tab title="구역 예약">
+    ```typescript
+    // 레스토랑 구역 예약 - Section만 지정
+    const sectionReservation = {
+      timeSlotId: "timeslot-uuid",
+      sectionId: "hall-section-uuid",  // 홀 섹션 지정
+      unitId: null,                    // 구체적 테이블은 미지정
+      groupSize: 4,
+      // 도착 시 홀 내에서 적절한 테이블 배정
+    };
+    ```
+  </Tab>
+
+  <Tab title="지정석 예약">
+    ```typescript
+    // 아트센터 지정석 - Section + Unit 지정
+    const assignedSeatReservation = {
+      timeSlotId: "timeslot-uuid",
+      sectionId: "floor-1-section-uuid",  // 1층 섹션
+      unitId: "seat-1F-15-uuid",         // 15번 좌석
+      groupSize: 1,
+      // 정확한 좌석이 예약됨
+    };
+
+    // 레스토랑 특정 테이블 예약
+    const assignedTableReservation = {
+      timeSlotId: "timeslot-uuid",
+      sectionId: "room-section-uuid",    // 룸 섹션
+      unitId: "table-R1-uuid",          // R1 테이블
+      groupSize: 6,
+      // 특정 테이블이 예약됨
+    };
+    ```
+  </Tab>
+</Tabs>
 
 ### ReservationContent 데이터 구조 예시
 
@@ -770,7 +868,7 @@ const artCenterContent: ReservationContent = {
 
   1. **추가 테이블 필요**
      - 메뉴 정보 → `RestaurantMenu` 테이블
-     - 소식/공지 → `Notice` 테이블  
+     - 소식/공지 → `Notice` 테이블
      - 빈자리 알림 → `WaitingList` 테이블
      - 예약 오픈 알림 → `NotificationRequest` 테이블
 

@@ -66,6 +66,18 @@ erDiagram
         String name
         String description
         UUID hostId FK
+        Json metadata
+        Boolean isActive
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    ReservationSection {
+        UUID id PK
+        String name
+        String description
+        UUID hostId FK
+        Json metadata
         Boolean isActive
         DateTime createdAt
         DateTime updatedAt
@@ -73,14 +85,14 @@ erDiagram
 
     ReservationUnit {
         UUID id PK
-        String sn UK
+        String code UK
         String name
         String description
         Int minCapacity
         Int maxCapacity
         Json metadata
-        UUID spaceId FK
-        String index UK
+        UUID sectionId FK
+        String index
         Boolean isActive
         DateTime createdAt
         DateTime updatedAt
@@ -132,7 +144,7 @@ erDiagram
         String requestNote
         Json additionalInfo
         UUID timeSlotId FK
-        UUID spaceId FK
+        UUID sectionId FK
         UUID unitId FK
         UUID memberId FK
         UUID couponPoolId FK
@@ -224,17 +236,18 @@ erDiagram
     }
 
     %% 관계 정의
-    ReservationHost ||--o{ ReservationSpace : "has"
-    ReservationHost ||--o{ ReservationContent : "has"
-    ReservationSpace ||--o{ ReservationUnit : "has"
-    ReservationSpace ||--o{ ReservationContent : "has"
-    ReservationSpace ||--o{ Reservation : "contains"
-    ReservationUnit ||--o{ Reservation : "is booked"
-    ReservationContent ||--o{ ReservationTimeSlot : "has"
+    ReservationHost ||--o{ ReservationSpace : "has (informational)"
+    ReservationHost ||--o{ ReservationSection : "has (operational)"
+    ReservationHost ||--o{ ReservationContent : "hosts"
+    ReservationSpace }o--o{ ReservationContent : "displays in"
+    ReservationSection ||--o{ ReservationUnit : "contains"
+    ReservationSection }o--o| Reservation : "optionally manages"
+    ReservationUnit }o--o| Reservation : "optionally assigned"
+    ReservationContent ||--o{ ReservationTimeSlot : "scheduled at"
     ReservationContent ||--o{ Terms : "has"
-    ReservationTimeSlot ||--o{ Reservation : "has"
+    ReservationTimeSlot ||--o{ Reservation : "booked for"
     Reservation ||--o{ ReservationHist : "has"
-    Reservation ||--|| CouponPool : "uses"
+    Reservation }o--o| CouponPool : "may use"
     Terms ||--o{ TermsAgreement : "has"
     Terms }o--o| ReservationContent : "may belong to"
     TermsAgreement ||--o{ TermsAgreementHist : "has"
@@ -335,6 +348,7 @@ model ReservationHost {
   displayEndAt     DateTime?
 
   spaces   ReservationSpace[]
+  sections ReservationSection[]
   contents ReservationContent[]
 
   isActive  Boolean  @default(true)
@@ -348,12 +362,11 @@ model ReservationSpace {
   id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String @db.VarChar(35)
   description String
+  metadata    Json?
 
-  host         ReservationHost      @relation(fields: [hostId], references: [id])
-  hostId       String               @db.Uuid
-  units        ReservationUnit[]
-  contents     ReservationContent[]
-  reservations Reservation[]
+  host     ReservationHost      @relation(fields: [hostId], references: [id])
+  hostId   String               @db.Uuid
+  contents ReservationContent[]
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -362,17 +375,35 @@ model ReservationSpace {
   @@map(name: "reservationSpace")
 }
 
+model ReservationSection {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String @db.VarChar(35)
+  description String
+  metadata    Json?
+
+  host         ReservationHost   @relation(fields: [hostId], references: [id])
+  hostId       String            @db.Uuid
+  units        ReservationUnit[]
+  reservations Reservation[]
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map(name: "reservationSection")
+}
+
 model ReservationUnit {
   id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sn          String @unique @db.VarChar(50)
+  code        String @unique @db.VarChar(20)
   name        String @db.VarChar(35)
   description String
   minCapacity Int    @default(0)
   maxCapacity Int    @default(0)
   metadata    Json?
 
-  space        ReservationSpace @relation(fields: [spaceId], references: [id])
-  spaceId      String           @db.Uuid
+  section      ReservationSection @relation(fields: [sectionId], references: [id])
+  sectionId    String             @db.Uuid
   reservations Reservation[]
 
   index     String
@@ -380,7 +411,7 @@ model ReservationUnit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([spaceId, index])
+  @@unique([sectionId, index])
   @@map(name: "reservationUnit")
 }
 
@@ -454,16 +485,16 @@ model Reservation {
   requestNote    String?
   additionalInfo Json?
 
-  timeSlot     ReservationTimeSlot @relation(fields: [timeSlotId], references: [id])
-  timeSlotId   String              @db.Uuid
-  space        ReservationSpace?   @relation(fields: [spaceId], references: [id])
-  spaceId      String?             @db.Uuid
-  unit         ReservationUnit?    @relation(fields: [unitId], references: [id])
-  unitId       String?             @db.Uuid
-  member       Member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  memberId     String              @db.Uuid
-  couponPool   CouponPool?         @relation(fields: [couponPoolId], references: [id])
-  couponPoolId String?             @unique @db.Uuid
+  timeSlot     ReservationTimeSlot  @relation(fields: [timeSlotId], references: [id])
+  timeSlotId   String               @db.Uuid
+  section      ReservationSection?  @relation(fields: [sectionId], references: [id])
+  sectionId    String?              @db.Uuid
+  unit         ReservationUnit?     @relation(fields: [unitId], references: [id])
+  unitId       String?              @db.Uuid
+  member       Member               @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId     String               @db.Uuid
+  couponPool   CouponPool?          @relation(fields: [couponPoolId], references: [id])
+  couponPoolId String?              @unique @db.Uuid
   hists        ReservationHist[]
 
   createdAt DateTime @default(now())
@@ -649,32 +680,38 @@ model TermsAgreementHist {
 
 ### 1. 예약 계층 구조
 
-예약 시스템은 5단계 계층 구조로 설계되어 있습니다:
+예약 시스템은 6단계 계층 구조로 설계되어 있습니다:
 
 1. **ReservationHost** (예약 호스트)
    - 예약 서비스를 제공하는 최상위 엔티티 (예: LG 아트센터, 레스토랑)
    - 운영 시간, 주소, 휴일 정보 관리
    - 현재 `ART_CENTER`, `RESTAURANT` 타입 지원
 
-2. **ReservationSpace** (예약 공간)
-   - 호스트 내의 개별 공간 (예: 공연장, 전시실, 다이닝홀, 룸)
-   - 하나의 호스트에 여러 공간 존재 가능
-   - Unit들과 Reservation들을 포함
+2. **ReservationSpace** (예약 공간 - 정보성)
+   - 호스트 내의 정보성 공간 표시 (예: 메인홀, 소극장, 다이닝룸)
+   - UI에서 콘텐츠 표시 위치를 나타내는 용도
+   - 실제 예약 운영과는 무관
 
-3. **ReservationUnit** (예약 단위)
-   - 실제 예약 가능한 최소 물리적 단위 (예: 좌석, 테이블)
-   - `sn`: 고유 좌석/테이블 코드 (예: "R1", "H4-1")
+3. **ReservationSection** (예약 섹션 - 운영)
+   - 호스트 내의 실제 예약 운영 단위 (예: 1층, 2층, 프라이빗 홀)
+   - Unit들을 포함하며 예약 관리의 기준
+   - 예약 시 선택적으로 지정
+
+4. **ReservationUnit** (예약 단위)
+   - Section 내 구체적인 물리적 단위 (예: 좌석, 테이블)
+   - `code`: 고유 좌석/테이블 코드 (예: "R1", "H4-1")
    - 최소/최대 수용 인원 (`minCapacity`/`maxCapacity`) 관리
-   - 메타데이터로 추가 속성 저장 가능
+   - 예약 시 선택적으로 할당 (지정석/자유석)
    - Fractional Index로 순서 관리
 
-4. **ReservationContent** (예약 콘텐츠)
+5. **ReservationContent** (예약 콘텐츠)
    - 실제 예약 대상이 되는 콘텐츠 (예: 특정 공연, 전시, 일별 다이닝)
+   - Space와 연결되어 UI 표시 위치 결정
    - 예약 오픈 기간(`openStartAt`/`openEndAt`)과 운영 기간(`operatingStartAt`/`operatingEndAt`) 분리 관리
    - `confirmConfig`: 예약 확정 방식 설정 (즉시 확정, 관리자 승인, 추첨)
    - `restrictionConfig`: 예약 제한 설정
 
-5. **ReservationTimeSlot** (예약 시간대)
+6. **ReservationTimeSlot** (예약 시간대)
    - 콘텐츠의 구체적인 예약 가능 시간
    - 수용 인원, 그룹 크기 제한 설정
    - `openConfig`: 시간대별 오픈 설정
@@ -687,7 +724,10 @@ model TermsAgreementHist {
   - `gradeAtIssue`: 예약 시점의 회원 등급
   - `requestNote`: 고객 요청사항
   - `additionalInfo`: 추가 정보 (JSON)
-  - Space와 Unit 관계 추가 (옵셔널)
+  - Section과 Unit 관계 (모두 선택적):
+    - Section만: 구역 예약 (예: 홀, 룸)
+    - Section + Unit: 지정석 예약 (예: 특정 테이블)
+    - 둘 다 없음: 자유 예약
   - 쿠폰과 1:1 관계 (`couponPoolId`)
 
 - **ReservationHist**: 예약 상태 변경 이력
