@@ -1,0 +1,372 @@
+---
+title: '쿠폰 시스템 API 정의서'
+description: 'LG 멤버십 쿠폰 시스템의 REST API 엔드포인트 상세 정의'
+icon: 'ticket'
+---
+
+## 개요
+
+LG 멤버십 쿠폰 시스템은 회원 등급별로 다양한 혜택을 제공하는 통합 쿠폰 관리 시스템입니다. 실물 쿠폰과 가상 쿠폰을 통합 관리하며, 외부 시스템(LG전자 NewBest)과 연동하여 실시간으로 쿠폰 정보를 제공합니다.
+
+### 핵심 개념
+
+| 용어                              | 설명                                    | 예시                                                             |
+| --------------------------------- | --------------------------------------- | ---------------------------------------------------------------- |
+| **가상 쿠폰 (Virtual Coupon)**    | 정책 기반으로 실시간 생성되는 쿠폰      | 아트센터 관람권, 프리미엄 라운지, LG 트윈스, 구독 쿠폰, SKS 쿠폰 |
+| **실물 쿠폰 (Real Coupon)**       | 외부 시스템에서 관리되는 실제 발급 쿠폰 | 무상 이전 설치권, 베스트샵 주차권, 할인 쿠폰                     |
+| **통합 쿠폰 (Integrated Coupon)** | 가상/실물 쿠폰을 통합한 단일 응답 형식  | 모든 쿠폰                                                        |
+| **멤버십 혜택 카테고리**          | 쿠폰을 분류하는 3가지 주요 카테고리     | 가전 컨시어지, 프리빌리지 라이프, 프리미엄 쇼핑                  |
+| **NewBest (베스트샵)**            | LG전자 NewBest 시스템 (베스트샵)        | 무상 이전 설치권, 베스트샵 주차권 조회                           |
+| **NewBest (OBS)**                 | LG전자 NewBest 시스템 (OBS)             | 할인 쿠폰 조회                                                   |
+
+## API 공통 정보
+
+### 기술 스택
+
+- **백엔드**: tRPC + trpc-openapi, PostgreSQL (Prisma ORM)
+- **API 인터페이스**:
+  - tRPC: 타입 안전성이 보장되는 기본 API 인터페이스
+  - REST: trpc-openapi를 통해 기존 tRPC 라우터를 REST API로도 노출
+- **인증**: JWT 기반
+- **외부 연동**: LG전자 NewBest 시스템 (베스트샵, OBS)
+
+### 인증 및 권한
+
+- **앱 API**: 회원 인증 필요 (memberProtectedProcedure)
+- **관리자 API**: 관리자 인증 필요 (adminProtectedProcedure)
+
+### 응답 형식
+
+모든 쿠폰 조회 API는 통합된 형식으로 응답합니다:
+
+```json
+{
+  "list": [
+    {
+      "sn": "COUPON-123456", // 쿠폰 번호 (가상 쿠폰은 발급 시점엔 null)
+      "status": "ISSUED", // 쿠폰 상태
+      "issuedAt": "2025-01-01T00:00:00Z", // 발급일
+      "redeemedAt": null, // 사용일
+      "startDate": "2025-01-01T00:00:00Z", // 시작일
+      "endDate": "2025-12-31T23:59:59Z", // 종료일
+      "coupon": {
+        "kind": "BESTSHOP_FREE_PARKING", // 쿠폰 종류
+        "name": "베스트샵 무료 주차 2시간", // 쿠폰명
+        "discountType": "PASS", // 할인 타입
+        "discountValue": "0", // 할인 값
+        "maxDiscount": "0" // 최대 할인 금액
+      },
+      "reservation": null // 예약 정보 (예약 연결 시 {id: "uuid"})
+    }
+  ]
+}
+```
+
+## 주요 데이터 타입
+
+### 멤버십 혜택 카테고리 (MembershipBenefitsKind)
+
+```typescript
+export const MembershipBenefitsKind = {
+  HOME_APPLIANCE_CONCIERGE: 'HOME_APPLIANCE_CONCIERGE', // 가전 컨시어지
+  PRIVILEGE_LIFE_STYLE: 'PRIVILEGE_LIFE_STYLE', // 프리빌리지 라이프 스타일
+  PREMIUM_SHOPPING: 'PREMIUM_SHOPPING', // 프리미엄 쇼핑
+} as const;
+```
+
+### 통합 쿠폰 종류 (IntegratedCouponKind)
+
+```typescript
+export const IntegratedCouponKind = {
+  // 가상 쿠폰 (정책 기반 실시간 생성)
+  FREE_ADMISSION_ART_CENTER_SHOW: 'FREE_ADMISSION_ART_CENTER_SHOW', // 아트센터 공연 관람권
+  PREMIUM_LOUNGE_ACCESS: 'PREMIUM_LOUNGE_ACCESS', // 프리미엄 라운지 이용권
+  LG_TWINS_TICKET_DISCOUNT: 'LG_TWINS_TICKET_DISCOUNT', // LG트윈스 할인
+  SKS_DINING_MEAL_DISCOUNT: 'SKS_DINING_MEAL_DISCOUNT', // SKS 식사권
+  SKS_DINING_SIGNATURE_BEVERAGE_FREE: 'SKS_DINING_SIGNATURE_BEVERAGE_FREE', // SKS 시그니처 음료
+  SUBSCRIPTION_REWARD: 'SUBSCRIPTION_REWARD', // 구독 쿠폰
+
+  // 외부 시스템 연동 쿠폰
+  FREE_APPLIANCE_RELOCATION_SERVICE: 'FREE_APPLIANCE_RELOCATION_SERVICE', // 무상 이전 설치 (NewBest)
+  BESTSHOP_FREE_PARKING: 'BESTSHOP_FREE_PARKING', // 베스트샵 무료 주차 (NewBest)
+  LOYALTY_DISCOUNT: 'LOYALTY_DISCOUNT', // 할인 쿠폰 (OBS)
+} as const;
+```
+
+### 쿠폰 상태 (CouponPoolStatus)
+
+```typescript
+export enum CouponPoolStatus {
+  ISSUED = 'ISSUED', // 발급됨
+  REDEEMED = 'REDEEMED', // 사용됨
+  EXPIRED = 'EXPIRED', // 만료됨
+  CANCELLED = 'CANCELLED', // 취소됨
+}
+```
+
+### 회원 등급 (MembershipGrade)
+
+```typescript
+export const MembershipGrade = {
+  AS00: 'AS00', // Diamond Black
+  AS01: 'AS01', // Diamond
+  AS02: 'AS02', // Platinum
+  AS03: 'AS03', // Gold
+  AS04: 'AS04', // Silver
+  AS05: 'AS05', // Silver (미구매)
+} as const;
+```
+
+## 에러 처리
+
+### 에러 코드 체계
+
+쿠폰 시스템의 에러 코드는 공통 에러 체계를 따릅니다:
+
+- **FDE**: Frontend Domain Error
+- **A**: Authentication/Authorization (인증/권한)
+- **C**: Common (공통)
+- **XXX**: 에러 번호
+
+### HTTP 상태 코드 매핑
+
+| TRPC 에러 코드        | HTTP 상태 | 설명                  |
+| --------------------- | --------- | --------------------- |
+| NOT_FOUND             | 404       | 리소스를 찾을 수 없음 |
+| BAD_REQUEST           | 400       | 잘못된 요청           |
+| FORBIDDEN             | 403       | 권한 없음             |
+| INTERNAL_SERVER_ERROR | 500       | 서버 내부 오류        |
+
+### 쿠폰 API 에러 코드
+
+#### meCoupons API
+
+| 코드      | HTTP | 설명                                             |
+| --------- | ---- | ------------------------------------------------ |
+| FDE-C-002 | 404  | 회원 정보를 찾을 수 없습니다 (NewBest 조회 실패) |
+
+#### couponRedeem API (쿠폰 사용)
+
+| 코드        | HTTP | 설명                          |
+| ----------- | ---- | ----------------------------- |
+| FDE-C-002,1 | 404  | 회원 정보를 찾을 수 없습니다  |
+| FDE-C-002,2 | 404  | 쿠폰을 찾을 수 없습니다       |
+| FDE-C-002,3 | 404  | 사용 가능한 쿠폰이 없습니다   |
+| FDE-A-002   | 403  | 쿠폰 사용 제한을 초과했습니다 |
+
+#### couponIssue API (쿠폰 발급)
+
+| 코드        | HTTP | 설명                                     |
+| ----------- | ---- | ---------------------------------------- |
+| FDE-C-002,1 | 404  | 회원 정보를 찾을 수 없습니다             |
+| FDE-C-002,2 | 404  | 쿠폰을 찾을 수 없습니다                  |
+| FDE-A-002,1 | 403  | 권한이 없습니다 (AS00, AS01 등급만 가능) |
+| FDE-A-002,2 | 403  | 이미 발급받은 쿠폰입니다                 |
+
+#### 기타 공통 에러
+
+| 코드      | HTTP | 설명                          |
+| --------- | ---- | ----------------------------- |
+| FDE-C-001 | 400  | 잘못된 요청입니다             |
+| FDE-C-901 | 500  | 내부 서버 오류가 발생했습니다 |
+
+## API 엔드포인트
+
+### 1. 앱 API
+
+| 메소드 | 엔드포인트                 | 설명              | 인증 |
+| ------ | -------------------------- | ----------------- | ---- |
+| GET    | `/external/app/me/coupons` | 내 쿠폰 목록 조회 | 필요 |
+
+#### 내 쿠폰 목록 조회 (meCoupons)
+
+현재 로그인한 회원의 모든 쿠폰을 조회합니다. 가상 쿠폰과 실물 쿠폰을 통합하여 반환합니다.
+
+- **요청**:
+
+  ```json
+  {
+    "kind": "PRIVILEGE_LIFE_STYLE" // [옵션] 특정 카테고리만 조회
+  }
+  ```
+
+- **응답**: 200 OK
+  ```json
+  {
+    "list": [
+      {
+        "sn": "PARK-2025-001", // 쿠폰 번호 (외부 시스템 쿠폰)
+        "status": "ISSUED", // 쿠폰 상태
+        "issuedAt": "2025-01-01T00:00:00Z", // 발급일
+        "redeemedAt": null, // 사용일
+        "startDate": "2025-01-01T00:00:00Z", // 시작일
+        "endDate": "2025-12-31T23:59:59Z", // 종료일
+        "coupon": {
+          "kind": "BESTSHOP_FREE_PARKING", // 쿠폰 종류
+          "name": "베스트샵 무료 주차 2시간", // 쿠폰명
+          "discountType": "PASS", // 할인 타입
+          "discountValue": "0", // 할인 값
+          "maxDiscount": "0" // 최대 할인 금액
+        },
+        "reservation": null // 예약 정보
+      },
+      {
+        "sn": null, // 가상 쿠폰은 sn이 null
+        "status": "ISSUED",
+        "issuedAt": null,
+        "redeemedAt": null,
+        "startDate": "2025-01-01T00:00:00Z", // 등급 시작일
+        "endDate": "2025-12-31T23:59:59Z", // 등급 종료일
+        "coupon": {
+          "kind": "SKS_DINING_SIGNATURE_BEVERAGE_FREE",
+          "name": "SKS 시그니처 음료",
+          "discountType": "FREE",
+          "discountValue": "0",
+          "maxDiscount": "0"
+        },
+        "reservation": null
+      },
+      {
+        "sn": null, // 가상 쿠폰
+        "status": "ISSUED",
+        "issuedAt": null,
+        "redeemedAt": null,
+        "startDate": "2025-01-01T00:00:00Z",
+        "endDate": "2026-12-31T23:59:59Z",
+        "coupon": {
+          "kind": "PREMIUM_LOUNGE_ACCESS",
+          "name": "프리미엄 라운지 이용권",
+          "discountType": "PASS",
+          "discountValue": "0",
+          "maxDiscount": "0"
+        },
+        "reservation": null
+      }
+    ]
+  }
+  ```
+
+### 2. 관리자 API
+
+| 메소드 | 엔드포인트                           | 설명                | 인증 |
+| ------ | ------------------------------------ | ------------------- | ---- |
+| GET    | `/external/admin/member/get-coupons` | 특정 회원 쿠폰 조회 | 필요 |
+
+#### 특정 회원 쿠폰 조회 (memberGetCoupons)
+
+관리자가 특정 회원의 쿠폰을 조회합니다. memNo 또는 memberId로 회원을 지정할 수 있습니다.
+
+- **요청**:
+
+  ```json
+  {
+    "memNo": "1234567890", // [옵션] 회원번호 (memNo/memberId 중 하나 필수)
+    "memberId": "uuid-member-id", // [옵션] 회원 UUID
+    "kind": "HOME_APPLIANCE_CONCIERGE" // [옵션] 특정 카테고리만 조회
+  }
+  ```
+
+- **응답**: meCoupons와 동일한 형식
+
+## 쿠폰 처리 로직
+
+### 1. 가상 쿠폰 (정책 기반 실시간 생성)
+
+가상 쿠폰은 회원 등급과 정책에 따라 실시간으로 생성되며, 사용 시 DB에 저장됩니다:
+
+#### 조회 시점 (가상 생성)
+
+1. **회원 정보 조회**: NewBest API로 회원 정보 조회 (`getMemberFromNewBest`)
+2. **등급 확인**: 회원 등급 및 등급 기간 확인 (`getMemberGrade`, `CUST_GRD_ST_DATE`, `CUST_GRD_ED_DATE`)
+3. **정책 적용**: `MEMBERSHIP_BENEFITS_POLICY[grade]`에서 해당 등급의 쿠폰 정책 확인
+4. **사용 이력 차감**: DB에서 사용 이력 조회 후 잔여 수량 계산
+5. **가상 쿠폰 생성**: 잔여 수량만큼 쿠폰 객체 생성하여 응답
+
+#### 사용 시점 (DB 저장)
+
+- 쿠폰 사용(redeem) 시 `CouponPool` 테이블에 실제 레코드 생성
+- 사용 이력이 기록되어 다음 조회 시 잔여 수량 계산에 반영
+
+**가상 쿠폰 종류**:
+
+- `FREE_ADMISSION_ART_CENTER_SHOW`: 아트센터 공연 관람권 (등급별 수량 제한)
+- `PREMIUM_LOUNGE_ACCESS`: 프리미엄 라운지 이용권 (등급별 수량 제한)
+- `LG_TWINS_TICKET_DISCOUNT`: LG 트윈스 할인권 (Pool 방식, 아래 별도 설명)
+- `SKS_DINING_MEAL_DISCOUNT`: SKS 식사권 (연차별 제공)
+- `SKS_DINING_SIGNATURE_BEVERAGE_FREE`: SKS 시그니처 음료 (일일 제한)
+- `SUBSCRIPTION_REWARD`: 구독 쿠폰 (등급별 수량 제한)
+
+#### LG 트윈스 쿠폰의 특별한 Pool 방식
+
+`LG_TWINS_TICKET_DISCOUNT`는 다른 가상 쿠폰과 달리 Pool 방식으로 운영됩니다:
+
+- **사전 준비**: CouponPool에 LG_TWINS_TICKET_DISCOUNT 타입 쿠폰이 대량으로 미리 생성되어 있음
+- **조회 시**: 정책에 따라 사용 가능한 수량만큼 가상으로 표시
+- **사용 시**:
+  - 새 쿠폰을 생성하지 않고 Pool에서 미사용 쿠폰 선택
+  - 선택된 쿠폰을 회원과 연결 (memberId 할당)
+  - 상태를 ISSUED로 변경하여 할당 완료
+
+### 2. 실제 쿠폰 (외부 시스템 연동)
+
+실제 발급된 쿠폰은 외부 시스템에서 조회합니다:
+
+#### NewBest (베스트샵) 연동
+
+- **무상 이전 설치**: `getCouponsFromNewBest(memNo, 'F')`
+- **베스트샵 주차권**: `getCouponsFromNewBest(memNo, 'P')`
+- 회원번호(MBS_CUST_ID)를 사용하여 조회
+
+#### NewBest (OBS) 연동
+
+- **할인 쿠폰**: `getObsCouponsFromNewBest(ci)`
+- CI(본인인증 식별자)를 사용하여 조회
+
+### 3. SKS 다이닝 쿠폰 세부 정책
+
+#### 식사권 (SKS_DINING_MEAL_DISCOUNT)
+
+- **등급별 제공**:
+  - AS03 (Gold): 연간 1회, 10% 할인
+  - AS02 (Platinum): 연간 1회, 20% 할인
+  - AS01 (Diamond): 연간 1회, 30% 할인
+  - AS00 (Diamond Black): 연간 1회, 50% 할인
+- **2년 등급 기간 운영**:
+  - 1년차: 1회 사용 가능
+  - 2년차: 1회 사용 가능
+  - 최대 총 2회 사용 가능
+- **사용 이력 추적**: CouponPool에서 연차별 사용 횟수 계산
+- **잔여 수량 계산**: 현재 연차 확인 후 미사용분만 표시
+
+#### 시그니처 음료 (SKS_DINING_SIGNATURE_BEVERAGE_FREE)
+
+- **제공 대상**: AS00 (Diamond Black) 등급만
+- **일일 제공**: 1개 (정책의 `term.count: 1`)
+- **당일 자정 만료**: 매일 0시 리셋
+- **중복 방지**: 당일 사용 이력 확인
+
+## 주의사항
+
+1. **가상 쿠폰 특성**:
+
+   - 조회 시에는 DB에 저장되지 않고 실시간 생성
+   - 사용(redeem) 시 DB에 실제 저장
+   - LG 트윈스 쿠폰은 Pool 방식으로 기존 쿠폰 할당
+   - 외부 시스템 장애 시 해당 쿠폰만 제외하고 응답
+
+2. **SKS 쿠폰 제한**:
+
+   - 시그니처 음료는 일일 제한
+   - 식사권은 연간 제한
+   - 사용 이력은 예약 시스템에서 관리
+
+3. **등급 변경 시**:
+
+   - 등급 변경 즉시 쿠폰 가용성 변경
+   - 이미 발급된 실물 쿠폰은 유지
+   - 가상 쿠폰은 새 등급 기준으로 재생성
+
+4. **외부 API 의존성**:
+   - NewBest 시스템 장애 시 graceful degradation
+   - 에러 발생 시 빈 배열 반환
+   - 로그 기록 후 계속 진행

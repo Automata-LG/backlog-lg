@@ -33,107 +33,227 @@ icon: 'layer-group'
   </Card>
 </CardGroup>
 
-## 2. 데이터 구조 통합
+## 2. 데이터 구조
 
-### 2.1 기존 구조 활용
+### 2.1 기존 타입 재사용
 
-```mermaid
-erDiagram
-    ReservationHost {
-        UUID id PK
-        String name "LG 아트센터 | SKS 서울 레스토랑"
-        ReservationHostKind kind "ARTS_CENTER | RESTAURANT"
-    }
-    
-    ReservationSpace {
-        UUID id PK
-        UUID hostId FK
-        String name "메인홀 | 소극장 | 다이닝 | 카페"
-    }
-    
-    ReservationContent {
-        UUID id PK
-        UUID spaceId FK
-        String name "뮤지컬 마틸다 | 2025-09-01 다이닝"
-        ContentType type "PERFORMANCE | DINING | CAFE"
-    }
-    
-    ReservationTimeSlot {
-        UUID id PK
-        UUID contentId FK
-        DateTime startAt
-        DateTime endAt
-        Int totalCapacity
-    }
-    
-    Reservation {
-        UUID id PK
-        UUID timeSlotId FK
-        UUID memberId FK
-        ReservationStatus status
-        String requestNote "레스토랑 전용"
-        Json additionalOptions "레스토랑 전용"
-        String vehicleNo "레스토랑 전용"
-        UUID sectionId FK "레스토랑 전용"
-        UUID unitId FK "레스토랑 전용"
-    }
-    
-    ReservationHost ||--o{ ReservationSpace : contains
-    ReservationSpace ||--o{ ReservationContent : hosts
-    ReservationContent ||--o{ ReservationTimeSlot : schedules
-    ReservationTimeSlot ||--o{ Reservation : books
-```
-
-### 2.2 레스토랑 전용 테이블 추가
-
-```mermaid
-erDiagram
-    ReservationSection {
-        UUID id PK
-        UUID spaceId FK
-        String name "룸 | 홀"
-        String sectionType "ROOM | HALL"
-        Json config
-        Boolean isActive
-    }
-    
-    ReservationUnit {
-        UUID id PK
-        UUID sectionId FK
-        String unitNo "R1 | H4-1 | H6-1"
-        UnitType unitType "ROOM | TABLE_4 | TABLE_6"
-        Int minCapacity
-        Int maxCapacity
-        Boolean isActive
-    }
-    
-    ReservationSpace ||--o{ ReservationSection : divides
-    ReservationSection ||--o{ ReservationUnit : contains
-    Reservation }o--|| ReservationSection : assigned_to
-    Reservation }o--|| ReservationUnit : seated_at
-```
-
-### 2.3 필드 확장
-
-#### Reservation 테이블 추가 필드
+<Card title="기존 타입 재사용 전략" icon="recycle">
+  프로젝트에서 이미 정의된 인터페이스와 타입을 최대한 재사용하여
+  레스토랑 예약 시스템에 필요한 모든 데이터 구조를 표현합니다.
+</Card>
 
 ```typescript
-interface ReservationExtension {
-  // 레스토랑 전용 필드
-  requestNote?: string;        // 요청사항 및 알러지 정보
-  additionalOptions?: {
-    showroomTour: boolean;     // 쇼룸투어
-    productConsultation: boolean; // 제품상담
-  };
-  vehicleNo?: string;          // 차량번호
-  sectionId?: UUID;            // 좌석 섹션 (룸/홀)
-  unitId?: UUID;               // 좌석 유닛 (테이블)
+// 1. 주소 정보 - IAddress 그대로 사용
+const restaurantAddress: IAddress = {
+  zipCode: '06122',
+  mainAddress: '서울특별시 강남구 논현로 508',
+  detailAddress: 'LG 강남 트윈타워 동관 1층'
+};
+
+// 2. 운영 시간 - IOperatingHours 그대로 사용
+const restaurantHours: IOperatingHours[] = [
+  {
+    days: [Weekday.MON, Weekday.TUE, Weekday.WED, Weekday.THU, Weekday.FRI],
+    hours: [
+      { openTime: '11:00', closeTime: '14:00' },  // 점심
+      { openTime: '17:00', closeTime: '21:00' }   // 저녁
+    ]
+  },
+  {
+    days: [Weekday.SAT, Weekday.SUN],
+    hours: [
+      { openTime: '11:00', closeTime: '21:00' }   // 종일
+    ]
+  }
+];
+
+// 3. 연락처 - IContactInfo 그대로 사용
+const restaurantContact: IContactInfo = {
+  phoneNumbers: [
+    {
+      type: ContactType.RESERVATION,
+      number: '02-1234-5678',
+      description: '예약 문의'
+    },
+    {
+      type: ContactType.CUSTOMER_SUPPORT,
+      number: '02-1234-5679',
+      description: '고객 지원'
+    }
+  ],
+  channels: [
+    {
+      type: ChannelType.KAKAO,
+      url: 'http://pf.kakao.com/sks',
+      name: 'SKS 서울 레스토랑'
+    },
+    {
+      type: ChannelType.INSTAGRAM,
+      url: 'https://instagram.com/sks_seoul',
+      name: '@sks_seoul'
+    }
+  ]
+};
+
+// 4. 예약 제한 - IRestrictionConfig 그대로 사용
+const restaurantRestriction: IRestrictionConfig = {
+  maxReservationPerDay: 1                  // 1일 1건 제한
+};
+
+// 5. 예약 확정 설정 - IConfirmConfig 그대로 사용
+const restaurantConfirm: IConfirmConfig = {
+  confirmType: ConfirmType.IMMEDIATE      // 레스토랑은 즉시 확정
+};
+```
+
+### 2.2 3계층 구조 (Host → Space → Unit)
+
+<Card title="3계층 구조" icon="layer-group">
+  - **Host**: 최상위 시설 (다이닝, 카페, 아트센터)
+  - **Space**: 중간 구역 (홀, 룸, 테라스, 좌석구역)
+  - **Unit**: 최소 예약 단위 (테이블, 좌석)
+</Card>
+
+#### ReservationUnit (신규)
+```prisma
+model ReservationUnit {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sn          String @unique @db.VarChar(50)
+  name        String @db.VarChar(35)
+  description String
+  minCapacity Int    @default(0)
+  maxCapacity Int    @default(0)
+  metadata    Json?
+
+  space        ReservationSpace @relation(fields: [spaceId], references: [id])
+  spaceId      String           @db.Uuid
+  reservations Reservation[]
+
+  index     String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([spaceId, index])
+  @@map(name: "reservationUnit")
 }
 ```
 
-## 3. 예약 방식 차별화
+#### ReservationSpace (기존, 확장)
+```prisma
+model ReservationSpace {
+  // 기존 필드...
+  units        ReservationUnit[]  // Space가 포함하는 Unit들
+  reservations Reservation[]      // Space에서 발생한 예약들
+}
+```
 
-### 3.1 타임슬롯 운영 방식
+#### Reservation 테이블 (기존, 확장)
+```prisma
+model Reservation {
+  // 기존 필드...
+  requestNote    String?  // 고객 요청사항
+  additionalInfo Json?    // 추가 정보 (vehicleNo 등)
+  
+  // 추가된 관계들
+  space        ReservationSpace?   @relation(fields: [spaceId], references: [id])
+  spaceId      String?             @db.Uuid
+  unit         ReservationUnit?    @relation(fields: [unitId], references: [id])
+  unitId       String?             @db.Uuid
+}
+```
+
+### 2.3 기존 테이블 확장
+
+#### ReservationTimeSlot openConfig
+```typescript
+// 새로 추가되는 등급별 차등 오픈 타입
+interface IGradedOpenConfig {
+  openType: 'GRADED';
+  openStartAtByGrade: {                        // 등급별 오픈 시작 시간 (절대값)
+    'AS00': string;                            // 다이아몬드 블랙: 익익월 오픈
+    'AS01': string;                            // 다이아몬드: 익월 오픈
+    'AS02': string;                            // 플래티넘: 익월 오픈
+    'AS03': string;                            // 골드: 익월 오픈
+    'AS04': string;                            // 실버: 익월 오픈
+    'AS05': string;                            // 실버: 익월 오픈
+  };
+  modificationByDays?: number;                 // D-2일 23:59:59 수정/취소 마감
+  reservationByDays?: number;                  // D-1일 23:59:59 예약 마감
+}
+```
+
+#### ReservationContent restrictionConfig
+```typescript
+interface IRestrictionConfig {
+  minMembershipGrade?: TMembershipGrade;  // 기존 필드
+  maxReservationPerDay?: number;          // 추가: 1일 최대 예약 건수
+}
+```
+
+## 3. 레스토랑 특화 운영 정책
+
+### 3.1 등급별 차등 오픈
+
+<Card title="등급별 예약 가능 기간" icon="calendar">
+  - **다이아몬드 블랙 (AS00)**: 조회일 기준 익익월까지 예약 가능
+  - **나머지 등급 (AS01~AS05)**: 조회일 기준 익월까지 예약 가능
+  - 매월 1일 오전 10시 신규 타임슬롯 오픈
+</Card>
+
+```typescript
+// 관리자가 3월 타임슬롯 생성 시 각 슬롯에 설정
+const restaurantOpen: IGradedOpenConfig = {
+  openType: 'GRADED',
+  openStartAtByGrade: {
+    'AS00': '2025-01-01T10:00:00',  // 다이아몬드 블랙: 1월 1일부터 예약 가능
+    'AS01': '2025-02-01T10:00:00',  // 다이아몬드: 2월 1일부터 예약 가능
+    'AS02': '2025-02-01T10:00:00',  // 플래티넘: 2월 1일부터 예약 가능
+    'AS03': '2025-02-01T10:00:00',  // 골드: 2월 1일부터 예약 가능
+    'AS04': '2025-02-01T10:00:00',  // 실버: 2월 1일부터 예약 가능
+    'AS05': '2025-02-01T10:00:00'   // 실버: 2월 1일부터 예약 가능
+  },
+  modificationByDays: 2,  // 수정/취소 마감: D-2일 23:59:59
+  reservationByDays: 1    // 예약 마감: D-1일 23:59:59
+};
+```
+
+### 3.2 수정/취소 정책
+
+<Note>
+  **역할별 수정/취소 데드라인**
+
+  - **일반 사용자**: 이용 N일 전 23:59:59까지 (modificationByDays 설정값)
+    - 기본값: 2일 전 23:59:59
+    - 예: 3월 15일 예약 → 3월 13일 23:59:59까지 수정/취소 가능
+
+  - **관리자**: 이용 시작 시간 직전까지
+    - 코드 레벨에서 처리 (별도 설정 없음)
+    - 예: 3월 15일 12:00 예약 → 3월 15일 11:59까지 수정/취소 가능
+</Note>
+
+#### 수정/취소 변경 추적
+```typescript
+interface IReservationDetailedChanges {
+  // 기존 필드들
+  timeSlot?: { old: {...}, new: {...} };
+  groupSize?: { old: number, new: number };
+  phoneNumber?: { old: string, new: string };
+  status?: { old: ReservationStatus, new: ReservationStatus };
+
+  // 일반화된 필드 추가
+  requestNote?: {
+    old: string | null;
+    new: string | null;
+  };
+  additionalInfo?: {
+    old: any | null;
+    new: any | null;
+  };
+}
+```
+
+### 3.3 타임슬롯 운영 방식
 
 | 구분 | 아트센터 | SKS 레스토랑 |
 |------|----------|--------------|
@@ -141,53 +261,185 @@ interface ReservationExtension {
 | **시간 선택** | 정해진 공연 시간 | 30분 단위 방문 시간 |
 | **정원 관리** | 슬롯별 좌석 수 | 일별 테이블 수 |
 | **예약 단위** | 좌석 개수 | 테이블 + 인원 |
-
-### 3.2 레스토랑 타임슬롯 구조
+| **오픈 방식** | BATCH/SEQUENTIAL | GRADED (등급별 차등) |
+| **예약 마감** | modificationByHours | reservationByDays |
+| **수정/취소 마감** | modificationByHours | modificationByDays |
 
 ```typescript
 // 레스토랑은 일 단위로 하나의 타임슬롯 생성
-{
-  contentId: "2025-09-01-dining",
-  startAt: "2025-09-01 11:00:00",
-  endAt: "2025-09-01 14:00:00",
-  totalCapacity: 50, // 전체 수용 인원
-  config: {
-    operatingHours: ["11:00", "11:30", "12:00", "12:30", "13:00", "13:30"],
-    tableConfig: {
-      room: { count: 1, capacity: 8 },
-      hall_4: { count: 6, capacity: 4 },
-      hall_6: { count: 2, capacity: 6 }
-    }
-  }
+const restaurantTimeSlot: ReservationTimeSlot = {
+  id: 'uuid',
+  contentId: '2025-09-01-dining-content-id',
+  startAt: new Date('2025-09-01 11:00:00'),
+  endAt: new Date('2025-09-01 21:00:00'),    // 당일 운영 종료 시간
+  totalCapacity: 50,                          // 전체 수용 인원
+  minGroupSize: 2,                            // 최소 예약 인원
+  maxGroupSize: 8,                            // 최대 예약 인원
+  openConfig: {                               // GRADED 타입 설정
+    openType: 'GRADED',
+    openStartAtByGrade: {
+      'AS00': '2025-01-01T10:00:00',         // 2개월 전 오픈
+      'AS01': '2025-02-01T10:00:00'          // 1개월 전 오픈
+    },
+    reservationByDays: 1,                    // D-1일 23:59:59까지 예약 가능
+    modificationByDays: 2                    // D-2일 23:59:59까지 수정/취소 가능
+  },
+  isActive: true
+};
+```
+
+### 3.4 물리적 제약 자동 처리
+
+<Note>
+  **물리적 제약은 Space/Unit으로 자동 처리**
+
+  레스토랑의 5-6인 일일 2팀 제한은 별도 정책이 아닙니다:
+  - 6인 테이블이 물리적으로 2개만 존재
+  - 5-6인 그룹은 6인 테이블에만 배정 가능
+  - 따라서 자동으로 일일 최대 2팀 제한
+</Note>
+
+## 4. 알림 시스템
+
+### 4.1 예약 오픈 알림
+
+<Card title="예약 오픈 알림" icon="bell">
+  새로운 타임슬롯이 오픈되기 전 사전 알림을 발송합니다.
+  등급별로 오픈 시기가 다르므로 등급별 알림 시점도 다릅니다.
+</Card>
+
+```typescript
+interface IOpenNotificationRequest {
+  id: string;
+  memberId: string;
+  memberGrade: TMembershipGrade;
+  contentId: string;
+  notifyAt: Date;              // 알림 발송 예정 시각
+  status: 'PENDING' | 'SENT' | 'FAILED';
+}
+
+// 다이아몬드 블랙 회원: 12월 30일 알림 (1월 1일 오픈 예정)
+// 일반 회원: 1월 30일 알림 (2월 1일 오픈 예정)
+```
+
+### 4.2 빈자리 알림 (WaitingList)
+
+<Note>
+  **빈자리 알림 기능**
+  - 예약이 만석인 날짜에 대한 대기 등록
+  - 취소 발생 시 대기자에게 순차적 알림
+  - 선착순 예약 재오픈
+</Note>
+
+#### 대기 등록 구조
+```typescript
+interface IWaitingListEntry {
+  id: string;
+  memberId: string;
+  memberGrade: TMembershipGrade;
+  contentId: string;
+  timeSlotId: string;          // 특정 날짜의 타임슬롯
+  preferredVisitTime?: string;  // 희망 방문 시간 (HH:MM)
+  preferredSpaceType?: 'ROOM' | 'HALL';  // 룸/홀 선호
+  groupSize: number;
+  registeredAt: Date;
+  notifiedAt?: Date;           // 알림 발송 시각
+  status: 'WAITING' | 'NOTIFIED' | 'EXPIRED' | 'CONFIRMED';
 }
 ```
 
-## 4. FSM 활용 방안
+#### 빈자리 알림 플로우
+```typescript
+// 예약 취소 시 대기자 알림
+async function notifyWaitingList(cancelledReservation: IReservation) {
+  // 취소된 예약의 타임슬롯 대기자 조회
+  const waitingList = await getWaitingList({
+    timeSlotId: cancelledReservation.timeSlotId,
+    status: 'WAITING',
+    groupSize: { lte: cancelledReservation.groupSize }
+  });
+  
+  // 등급별 우선순위 + 등록 시간 순 정렬
+  const sortedList = waitingList.sort((a, b) => {
+    const gradeOrder = { AS00: 0, AS01: 1, AS02: 2, AS03: 3, AS04: 4, AS05: 5 };
+    if (gradeOrder[a.memberGrade] !== gradeOrder[b.memberGrade]) {
+      return gradeOrder[a.memberGrade] - gradeOrder[b.memberGrade];
+    }
+    return a.registeredAt.getTime() - b.registeredAt.getTime();
+  });
+  
+  // 상위 N명에게 알림 (보통 3-5명)
+  const notifyCount = Math.min(5, sortedList.length);
+  for (let i = 0; i < notifyCount; i++) {
+    await sendVacancyNotification(sortedList[i]);
+    await updateWaitingStatus(sortedList[i].id, 'NOTIFIED');
+  }
+  
+  // 24시간 후 만료 처리 스케줄링
+  scheduleExpiration(sortedList.slice(0, notifyCount), 24 * 60 * 60 * 1000);
+}
+```
 
-### 4.1 상태 매핑
+#### 대기 관리 API
+```typescript
+// 빈자리 알림 신청
+POST /api/waiting-list
+Body: {
+  contentId: string;
+  timeSlotId: string;
+  groupSize: number;
+  preferredVisitTime?: string;
+  preferredSpaceType?: 'ROOM' | 'HALL';
+}
 
-<Card title="기존 FSM 100% 활용" icon="diagram-project">
-  SKS 레스토랑의 모든 상태는 기존 FSM으로 완벽하게 표현 가능합니다.
+// 대기 상태 조회
+GET /api/waiting-list/my
+Query: {
+  status?: 'WAITING' | 'NOTIFIED';
+}
+
+// 대기 취소
+DELETE /api/waiting-list/:id
+```
+
+## 5. 예약 상태 관리 (FSM)
+
+### 5.1 기존 FSM 활용
+
+<Card title="기존 FSM 그대로 활용" icon="diagram-project">
+  SKS 레스토랑의 모든 상태는 기존 ReservationStatus enum으로 완벽하게 표현 가능합니다.
 </Card>
 
-| SKS 상태 | 기존 FSM | 구분 방법 |
-|----------|----------|-----------|
+```typescript
+// 기존 ReservationStatus enum 그대로 활용
+enum ReservationStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  CANCELLED = 'CANCELLED',
+  USED = 'USED',
+  NOSHOW = 'NOSHOW'
+}
+```
+
+### 5.2 레스토랑 관점 매핑
+
+| SKS 상태 | 기존 ReservationStatus | 구분 방법 |
+|----------|------------------------|-----------|
 | 예약대기 | PENDING | status = 'PENDING' |
-| 예약확정 | CONFIRMED | status = 'CONFIRMED' & sectionId = null |
-| 예약확정_좌석배정 | CONFIRMED | status = 'CONFIRMED' & sectionId != null |
+| 예약확정 | CONFIRMED | status = 'CONFIRMED' & unitId = null |
+| 예약확정_좌석배정 | CONFIRMED | status = 'CONFIRMED' & unitId != null |
 | 예약취소_유저 | CANCELLED | reasonCode = 'USER_CANCEL' |
 | 예약취소_관리자 | CANCELLED | reasonCode = 'ADMIN_CANCEL' |
 | 이용완료 | USED | status = 'USED' |
 | 노쇼 | NOSHOW | status = 'NOSHOW' |
 
-### 4.2 상태 전환 규칙
-
+#### 상태 전환 규칙
 ```typescript
 // 레스토랑 예약 생성 (즉시 확정)
 USER_CREATE_CONFIRMED → CONFIRMED
 
 // 좌석 배정 (상태 변경 없음, 필드만 업데이트)
-CONFIRMED + updateSectionId/unitId
+CONFIRMED + updateUnitId
 
 // 체크인 처리
 ADMIN_MARK_USED → USED
@@ -196,29 +448,9 @@ ADMIN_MARK_USED → USED
 USER_CANCEL → CANCELLED
 ```
 
-### 4.3 예약 상태 세부 매핑
+## 6. API 통합
 
-<Note>
-  **레스토랑 관점에서의 상태 표현**
-  
-  | 레스토랑 관점 | 실제 FSM 상태 | 구분 방법 |
-  |--------------|--------------|------------|
-  | 예약대기 | PENDING | status = 'PENDING' |
-  | 예약확정 | CONFIRMED | sectionId = null |
-  | 예약확정_좌석배정 | CONFIRMED | sectionId != null |
-  | 예약취소_유저 | CANCELLED | reasonCode = 'USER_CANCEL' |
-  | 예약취소_관리자 | CANCELLED | reasonCode = 'ADMIN_CANCEL' |
-  | 이용완료 | USED | status = 'USED' |
-  | 노쇼 | NOSHOW | status = 'NOSHOW' |
-  
-  - 좌석 배정은 CONFIRMED 상태 내에서 sectionId/unitId 필드로 관리
-  - 모든 상태 전환 규칙은 기존 FSM 그대로 적용
-</Note>
-
-## 5. API 통합 전략
-
-### 5.1 기존 API 재사용
-
+### 기존 API 재사용
 ```typescript
 // 기존 API 그대로 사용
 trpc.reservation.app.list()      // 예약 목록
@@ -231,8 +463,7 @@ trpc.reservation.restaurant.assignTable()  // 테이블 배정
 trpc.reservation.restaurant.checkIn()      // 체크인 처리
 ```
 
-### 5.2 필터링 전략
-
+### 호스트별 필터링
 ```typescript
 // 호스트별 필터링
 const restaurants = await trpc.reservation.host.list({
@@ -245,17 +476,16 @@ const diningReservations = await trpc.reservation.app.list({
 });
 ```
 
-## 6. 화면 통합 방안
+## 7. UI/UX 통합
 
-### 6.1 어드민 화면 통합
-
+### 관리자 화면
 <Tabs>
   <Tab title="예약 내역 관리">
     **기존 화면 활용**
     - 기간별 조회: 날짜 범위 필터
     - 일별 조회: 달력 뷰 + 시간대별 표시
     - 예약 상세: 레스토랑 필드 추가 표시
-    
+
     **레스토랑 전용 추가**
     - 좌석 배정 버튼
     - 체크인 처리 버튼
@@ -267,17 +497,15 @@ const diningReservations = await trpc.reservation.app.list({
     - 고객 정보
     - 예약 날짜
     - 인원
-    
-    **레스토랑 전용**
+
+    **레스토랑 특화**
     - 방문 시간 (30분 단위)
-    - 요청사항
-    - 추가 옵션
-    - 차량번호
+    - 요청사항 (requestNote)
+    - 추가 정보 (additionalInfo: 쇼룸투어, 제품상담, 차량번호 등)
   </Tab>
 </Tabs>
 
-### 6.2 앱 화면 통합
-
+### 앱 화면 통합
 <CardGroup cols={2}>
   <Card title="예약 플로우" icon="flow">
     - Step 1: 호스트 선택 (아트센터/레스토랑)
@@ -294,121 +522,200 @@ const diningReservations = await trpc.reservation.app.list({
   </Card>
 </CardGroup>
 
-## 7. 제한 사항 관리
+## 8. 검증 및 제약사항
 
-### 7.1 레스토랑 전용 제한
-
+### 1일 1건 제한
 ```typescript
-interface RestaurantRestriction {
-  // 예약 제한
-  maxReservationPerDay: 1;        // 1일 1건
-  maxGroupSize_5_6: 2;            // 홀 5-6인 하루 2건
-  cancelDeadline: 'D-2 23:59';    // 취소 마감
-  
-  // 인원 제한
-  roomCapacity: { min: 4, max: 8 };
-  hallCapacity: { min: 2, max: 6 };
-  
-  // 시간 제한
-  diningHours: ['11:00', '14:00'];
-  cafeHours: ['15:00', '18:00'];
-}
-```
+const restaurantRestriction: IRestrictionConfig = {
+  maxReservationPerDay: 1                 // 1일 1건 제한
+};
 
-### 7.2 검증 로직
-
-```typescript
-// 예약 생성 시 검증
-async function validateRestaurantReservation(input) {
-  // 1. 당일 예약 불가
-  if (isToday(input.date)) throw new Error('당일 예약 불가');
-  
-  // 2. 1일 1건 제한
-  const existing = await checkExistingReservation(input.memberId, input.date);
-  if (existing) throw new Error('이미 예약 존재');
-  
-  // 3. 홀 5-6인 제한
-  if (input.section === 'HALL' && input.guests >= 5) {
-    const count = await countLargeGroupReservations(input.date);
-    if (count >= 2) throw new Error('5-6인 예약 마감');
+// 검증 함수
+async function validateReservation(input, restriction: IRestrictionConfig) {
+  if (restriction.maxReservationPerDay) {
+    const existing = await checkExistingReservation(input.memberId, input.date);
+    if (existing) {
+      throw new Error('이미 해당 날짜에 예약이 존재합니다');
+    }
   }
 }
 ```
 
-## 8. 에러 처리 및 검증
+### Space/Unit 기반 가용성 검증
+```typescript
+async function validateResourceAvailability(
+  reservationRequest: any,
+  spaceId: string
+) {
+  // 1. 해당 공간의 Unit 조회
+  const space = await db.reservationSpace.findUnique({
+    where: { id: spaceId },
+    include: {
+      units: {
+        where: { isActive: true }
+      }
+    }
+  });
 
-### 8.1 주요 에러 시나리오
+  // 2. 요청 인원에 맞는 Unit 찾기
+  const availableUnit = space?.units
+    .find(unit => {
+      return reservationRequest.guests >= unit.minCapacity && 
+             reservationRequest.guests <= unit.maxCapacity;
+    });
+
+  if (!availableUnit) {
+    throw new Error('적합한 테이블/좌석이 없습니다');
+  }
+
+  // 3. 해당 Unit의 예약 상태 확인
+  const existingReservation = await db.reservation.findFirst({
+    where: {
+      unitId: availableUnit.id,
+      date: reservationRequest.date,
+      status: { in: ['PENDING', 'CONFIRMED'] }
+    }
+  });
+
+  if (existingReservation) {
+    throw new Error('이미 예약된 테이블/좌석입니다');
+  }
+
+  return availableUnit;
+}
+```
+
+## 9. 에러 처리
 
 <Warning>
   **예약 시스템 에러 처리**
-  
+
   1. **중복 예약 방지**
-     - 동일 날짜에 이미 예약 존재 시
+     - 동일 날짜에 이미 해당 컨텐츠에 대한 예약 존재 시
      - 에러 메시지: "이미 해당 날짜에 예약이 존재합니다"
-  
-  2. **예약 가능 시간 초과**
+
+  2. **예약 미 오픈**
      - 블랙: D+60일 초과
      - 일반: D+30일 초과
-     - 에러 메시지: "예약 가능 기간을 초과했습니다"
-  
-  3. **쿠폰 유효성 검증 실패**
-     - 만료된 쿠폰 사용 시
-     - 이미 사용된 쿠폰 중복 사용 시
-  
-  4. **테이블 배정 오류**
+     - 에러 메시지: "예약이 아직 오픈 되지 않은 일자 입니다"
+
+  3. **테이블 배정 오류**
      - 5-6인 그룹 일일 2팀 제한 초과
      - 해당 테이블 모두 예약 완료
-  
-  5. **네트워크 오류**
-     - API 호출 실패 시 재시도 로직
-     - 사용자 친화적 에러 메시지
+
+  4. **잔여좌석 없음**
+     - 예약 완료 직전 다른 사용자가 먼저 예약
+     - 에러 메시지: "예약가능한 좌석이 없습니다"
+
+  5. **예약/취소/변경 시간 경과**
+     - 수정/취소 가능 시간 경과
+     - 에러 메시지: "예약/취소/변경 가능한 시간이 아닙니다"
 </Warning>
 
-### 8.2 검증 로직 구현
+## 10. 구현 예시
+
+### Space/Unit 구성 예시
+
+<CardGroup cols={2}>
+  <Card title="레스토랑" icon="utensils">
+    ```typescript
+    // 레스토랑 Space/Unit 구성
+    const restaurantSpaces = [
+      {
+        name: "룸",
+        units: [
+          { sn: "R1", name: "룸 테이블 1", minCapacity: 4, maxCapacity: 8 }
+        ]
+      },
+      {
+        name: "홀",
+        units: [
+          { sn: "H4-1", name: "홀 4인석 1", minCapacity: 2, maxCapacity: 4 },
+          { sn: "H4-2", name: "홀 4인석 2", minCapacity: 2, maxCapacity: 4 },
+          { sn: "H6-1", name: "홀 6인석 1", minCapacity: 5, maxCapacity: 6 },
+          { sn: "H6-2", name: "홀 6인석 2", minCapacity: 5, maxCapacity: 6 }
+        ]
+      }
+    ];
+    ```
+  </Card>
+
+  <Card title="아트센터" icon="theater-masks">
+    ```typescript
+    // 아트센터 Space/Unit 구성
+    const artCenterSpaces = [
+      {
+        name: "VIP석",
+        units: Array(50).fill(null).map((_, i) => ({
+          sn: `VIP-${i+1}`,
+          name: `VIP석 ${i+1}`,
+          minCapacity: 1,
+          maxCapacity: 1
+        }))
+      },
+      {
+        name: "R석",
+        units: Array(100).fill(null).map((_, i) => ({
+          sn: `R-${i+1}`,
+          name: `R석 ${i+1}`,
+          minCapacity: 1,
+          maxCapacity: 1
+        }))
+      }
+    ];
+    ```
+  </Card>
+</CardGroup>
+
+### ReservationContent 데이터 구조 예시
 
 ```typescript
-// 예약 생성 시 검증
-async function validateRestaurantReservation(input) {
-  // 1. 당일 예약 불가
-  if (isToday(input.date)) {
-    throw new Error('당일 예약은 불가능합니다');
-  }
-  
-  // 2. 1일 1건 제한
-  const existing = await checkExistingReservation(
-    input.memberId, 
-    input.date
-  );
-  if (existing) {
-    throw new Error('이미 해당 날짜에 예약이 존재합니다');
-  }
-  
-  // 3. 홀 5-6인 제한
-  if (input.section === 'HALL' && input.guests >= 5) {
-    const count = await countLargeGroupReservations(input.date);
-    if (count >= 2) {
-      throw new Error('5-6인 예약이 마감되었습니다');
-    }
-  }
-  
-  // 4. 멤버십 등급별 예약 기간 검증
-  const memberGrade = await getMemberGrade(input.memberId);
-  const maxDays = memberGrade === 'BLACK' ? 60 : 30;
-  const daysDiff = differenceInDays(input.date, new Date());
-  
-  if (daysDiff > maxDays) {
-    throw new Error(`예약 가능 기간(D+${maxDays})을 초과했습니다`);
-  }
-}
+// 레스토랑 컨텐츠
+const sksRestaurantContent: ReservationContent = {
+  id: 'uuid',
+  name: '2025-09-01 다이닝',
+  description: 'SKS 서울 레스토랑 다이닝',
+  images: ['url1', 'url2', 'url3'],
+  instructions: '예약 변경은 2일 전까지 가능합니다',
+  contactInfo: restaurantContact,             // IContactInfo (JSON)
+  restrictionConfig: restaurantRestriction,   // IRestrictionConfig (JSON)
+  confirmConfig: restaurantConfirm,           // IConfirmConfig (JSON)
+  displayStartAt: new Date('2025-02-01'),
+  displayEndAt: new Date('2025-03-31'),
+  openStartAt: null,                          // 자동 계산
+  openEndAt: null,                            // 자동 계산
+  operatingStartAt: null,                     // 자동 계산
+  operatingEndAt: null,                       // 자동 계산
+  hostId: 'restaurant-host-id',
+  spaceId: 'dining-space-id',
+  isActive: true
+};
+
+// 아트센터 컨텐츠 (비교)
+const artCenterContent: ReservationContent = {
+  id: 'uuid',
+  name: '뮤지컬 마틸다',
+  description: '가족 뮤지컬의 대표작',
+  images: ['poster1.jpg', 'poster2.jpg'],
+  instructions: '8세 이상 관람 가능',
+  contactInfo: artCenterContact,
+  restrictionConfig: artCenterRestriction,
+  confirmConfig: artCenterConfirm,
+  displayStartAt: new Date('2025-01-01'),
+  displayEndAt: new Date('2025-12-31'),
+  hostId: 'artcenter-host-id',
+  spaceId: 'theater-space-id',
+  isActive: true
+};
+
+// 주의: operatingHours와 address는 ReservationHost 레벨에 저장됨
 ```
 
-## 9. 마이그레이션 전략
-
-### 9.1 단계별 적용
+## 11. 마이그레이션 전략
 
 <Steps>
   <Step title="Phase 1: 데이터 구조 확장">
-    - ReservationSection, ReservationUnit 테이블 생성
+    - ReservationUnit 테이블 생성
     - Reservation 테이블 필드 추가
     - 초기 데이터 설정
   </Step>
@@ -432,17 +739,9 @@ async function validateRestaurantReservation(input) {
   </Step>
 </Steps>
 
-### 9.2 호환성 유지
+## 12. 기대 효과 및 추가 구현 필요사항
 
-<Warning>
-  **중요 고려사항**
-  - 기존 아트센터 예약에 영향 없도록 구현
-  - 호스트/컨텐츠 타입별 분기 처리
-  - 공통 컴포넌트는 props로 커스터마이징
-  - 레스토랑 전용 로직은 별도 모듈화
-</Warning>
-
-## 10. 기대 효과
+### 기대 효과
 
 <CardGroup cols={3}>
   <Card title="개발 효율성" icon="rocket">
@@ -464,158 +763,21 @@ async function validateRestaurantReservation(input) {
   </Card>
 </CardGroup>
 
-## 11. ERD/FSM 커버리지 분석
-
-### 11.1 완벽히 커버되는 부분 (90%)
-
-#### 기존 ERD로 커버
-- ✅ **ReservationHost**: 호스트 구분 (아트센터/레스토랑)
-- ✅ **ReservationSpace**: 공간 구분 (다이닝/카페)
-- ✅ **ReservationContent**: 날짜별 컨텐츠 관리
-- ✅ **ReservationTimeSlot**: 예약 시간 슬롯
-- ✅ **Reservation**: 기본 예약 정보
-- ✅ **Member**: 회원 정보 및 인증
-- ✅ **Admin**: 관리자 권한
-- ✅ **CouponPool**: 쿠폰 관리
-
-#### 레스토랑 확장 테이블로 커버
-- ✅ **ReservationSection**: 룸/홀 섹션 구분
-- ✅ **ReservationUnit**: 개별 테이블 관리
-- ✅ **Reservation 추가 필드**:
-  - `requestNote`: 알러지 정보 및 요청사항
-  - `additionalOptions`: 쇼룸투어, 제품상담
-  - `vehicleNo`: 차량번호
-  - `sectionId/unitId`: 테이블 배정 정보
-
-#### FSM으로 완벽 커버
-- ✅ 모든 예약 상태: PENDING → CONFIRMED → USED/NOSHOW/CANCELLED
-- ✅ 상태 전환 규칙 100% 활용
-- ✅ 취소/변경 로직 그대로 적용
-
-### 11.2 부분적 커버 또는 추가 필요 (10%)
+### 추가 구현 필요사항
 
 <Warning>
   **추가 구현 필요 사항**
-  
-  1. **정책 관련 (Config/JSON으로 처리 가능)**
-     - 예약 가능 기간 (D+30/D+60) → `ReservationContent.config`
-     - 1일 1건 제한 → 비즈니스 로직
-     - 홀 5-6인 일일 2건 제한 → 비즈니스 로직
-     - 노쇼 패널티 규칙 → 추가 테이블 또는 config
-  
-  2. **누락된 엔티티**
-     - ❌ 메뉴 정보 → `RestaurantMenu` 테이블 필요
-     - ❌ 소식/공지 → `Notice` 테이블 필요
-     - ❌ 빈자리 알림 신청 → `WaitingList` 테이블 필요
-     - ❌ 이미지 관리 → `Image` 테이블 또는 CDN URL
-  
-  3. **통계/리포트 (쿼리로 처리)**
+
+  1. **추가 테이블 필요**
+     - 메뉴 정보 → `RestaurantMenu` 테이블
+     - 소식/공지 → `Notice` 테이블  
+     - 빈자리 알림 → `WaitingList` 테이블
+     - 예약 오픈 알림 → `NotificationRequest` 테이블
+
+  2. **Member 테이블 확장**
+     - 노쇼 패널티 필드 추가 필요
+
+  3. **통계/리포트**
      - 예약 통계 → 집계 쿼리
      - 운영 리포트 → 집계 쿼리
 </Warning>
-
-### 11.3 권장 테이블 추가
-
-```typescript
-// 1. 메뉴 테이블
-model RestaurantMenu {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  contentId     String   @db.Uuid
-  type          String   // DINING | CAFE
-  name          String
-  description   String?
-  price         Int
-  imageUrl      String?
-  displayOrder  Int
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  content ReservationContent @relation(fields: [contentId], references: [id])
-}
-
-// 2. 소식 테이블  
-model Notice {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  hostId        String   @db.Uuid
-  title         String
-  content       String   @db.Text
-  startDate     DateTime
-  endDate       DateTime
-  displayOrder  Int
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  host ReservationHost @relation(fields: [hostId], references: [id])
-}
-
-// 3. 대기자 테이블
-model WaitingList {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  memberId      String   @db.Uuid
-  contentId     String   @db.Uuid
-  requestDate   DateTime
-  notified      Boolean  @default(false)
-  notifiedAt    DateTime?
-  createdAt     DateTime @default(now())
-  
-  member  Member              @relation(fields: [memberId], references: [id])
-  content ReservationContent  @relation(fields: [contentId], references: [id])
-}
-```
-
-### 11.4 Config로 처리 가능한 정책
-
-```typescript
-// ReservationContent.config JSON 필드에 저장
-{
-  "policies": {
-    "reservationDays": {
-      "BLACK": 60,
-      "GENERAL": 30
-    },
-    "cancelDeadline": 2,  // D-2
-    "dailyLimit": 1,
-    "largeGroupLimit": {
-      "size": [5, 6],
-      "maxPerDay": 2
-    }
-  },
-  "operatingHours": {
-    "dining": ["11:00", "14:00"],
-    "cafe": ["15:00", "18:00"]
-  }
-}
-
-// Member 테이블에 추가 고려
-// penaltyCount: Int @default(0)
-// penaltyExpiredAt: DateTime?
-```
-
-### 11.5 구현 우선순위
-
-<Steps>
-  <Step title="Phase 1: 즉시 활용 (완료)">
-    - 기존 ERD 구조 활용
-    - ReservationSection/Unit 테이블 추가
-    - Reservation 필드 확장
-  </Step>
-  
-  <Step title="Phase 2: 필수 추가 (진행 필요)">
-    - RestaurantMenu 테이블
-    - Notice 테이블
-    - WaitingList 테이블
-  </Step>
-  
-  <Step title="Phase 3: 선택적 개선">
-    - 이미지 관리 체계
-    - 노쇼 패널티 시스템
-    - 통계 집계 최적화
-  </Step>
-</Steps>
-
-<Note>
-  **결론**: 현재 ERD/FSM으로 약 90% 커버 가능하며, 
-  메뉴/소식/대기자 테이블만 추가하면 100% 구현 가능합니다.
-</Note>
