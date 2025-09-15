@@ -342,6 +342,48 @@ export interface IReservationDetailedChanges {
 }
 ```
 
+## 가격 항목 타입
+
+### ReservationPriceKind (가격 항목 종류)
+
+```typescript
+export enum ReservationPriceKind {
+  TICKET = 'TICKET',   // 티켓
+  MENU = 'MENU',       // 메뉴
+  SERVICE = 'SERVICE'  // 서비스
+}
+```
+
+### ReservationPriceType (가격 유형)
+
+```typescript
+export enum ReservationPriceType {
+  FIXED = 'FIXED',       // 고정 가격
+  PER_UNIT = 'PER_UNIT'  // 단위당 가격
+}
+```
+
+### 가격 항목 인터페이스
+
+```typescript
+interface ReservationPriceItem {
+  id: string;
+  kind: ReservationPriceKind;
+  name: string;
+  description?: string;
+  basePrice: number;
+  priceType: ReservationPriceType;
+  minQuantity: number;
+  maxQuantity: number;  // 0이면 무제한
+  images: string[];
+  contentId: string;
+  index: string;       // Fractional 인덱싱
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
 ## 기타 유틸리티 타입
 
 ### 정렬 옵션
@@ -355,6 +397,8 @@ export const OrderBy = {
   createdAt_desc: 'createdAt_desc',
   updatedAt_asc: 'updatedAt_asc',
   updatedAt_desc: 'updatedAt_desc',
+  index_asc: 'index_asc',
+  index_desc: 'index_desc'
 } as const;
 
 /**
@@ -380,6 +424,58 @@ export const ProgressStatusFilter = {
 } as const;
 
 export type TProgressStatusFilter = keyof typeof ProgressStatusFilter;
+```
+
+## 체크인 관련 스키마
+
+### appReservationCheckInInputSchema
+
+```typescript
+export const appReservationCheckInInputSchema = z.object({
+  id: z.string().uuid({ message: '유효한 예약 ID가 필요합니다' }),
+  note: z.string().max(500, { message: '노트는 최대 500자까지 가능합니다' }).optional()
+});
+```
+
+## 예약 통계 스키마
+
+### overallReservationStatsSchema
+
+```typescript
+export const overallReservationStatsSchema = z.object({
+  // 수용/잔여 인원
+  totalCapacity: z.number(),        // 전체 수용 인원
+  availableCapacity: z.number(),    // 전체 잔여 인원
+
+  // 예약 현황
+  pendingCount: z.number(),         // 전체 대기 예약 수
+  confirmedCount: z.number(),       // 전체 확정 예약 수
+  cancelledCount: z.number(),       // 전체 취소 예약 수
+  usedCount: z.number(),            // 전체 이용완료 예약 수
+  noshowCount: z.number(),          // 전체 노쇼 예약 수
+
+  // 인원 통계
+  totalPendingSize: z.number(),     // 전체 대기 인원
+  totalConfirmedSize: z.number(),   // 전체 확정 인원
+  totalCancelledSize: z.number(),   // 전체 취소 인원
+  totalUsedSize: z.number(),        // 전체 이용완료 인원
+  totalNoshowSize: z.number(),      // 전체 노쇼 인원
+
+  // 복합 계산 수치
+  actualReservedSize: z.number(),   // 전체 실제점유 인원
+  actualConfirmedSize: z.number(),  // 전체 실제확정 인원
+  actualCancelledSize: z.number(),  // 전체 실제취소 인원
+
+  // 비율 통계
+  reservationRate: z.number(),      // 전체 예약률
+  confirmationRate: z.number(),     // 전체 확정률
+  utilizationRate: z.number(),      // 전체 이용률
+  cancellationRate: z.number(),     // 전체 취소율
+  noshowRate: z.number(),           // 전체 노쇼율
+
+  // 타임슬롯별 통계
+  timeSlotStats: z.array(reservationTimeSlotStatsSchema)
+});
 ```
 
 ## 샘플 데이터

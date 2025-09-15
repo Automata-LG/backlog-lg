@@ -458,6 +458,47 @@ enum ReservationHostKind {
 }
 ```
 
+### 가격 항목 조회
+
+#### POST /external/app/reservation/price-items
+
+예약 가격 항목 목록을 조회합니다.
+
+**인증**: 불필요 (publicProcedure)
+
+**요청 바디**:
+```json
+{
+  "contentId": "content-uuid",
+  "kind": "MENU",
+  "page": 1,
+  "pageSize": 10
+}
+```
+
+**응답**:
+```json
+{
+  "list": [
+    {
+      "id": "price-item-uuid",
+      "kind": "MENU",
+      "name": "런치 코스",
+      "description": "2코스 메뉴",
+      "basePrice": 50000,
+      "priceType": "FIXED",
+      "minQuantity": 1,
+      "maxQuantity": 10,
+      "images": ["https://..."]
+    }
+  ],
+  "page": 1,
+  "pageSize": 10,
+  "pageCount": 1,
+  "totalCount": 1
+}
+```
+
 ### 내 예약 목록 조회
 
 #### POST /external/app/reservation/me/reservations
@@ -669,11 +710,36 @@ enum ReservationHostKind {
 
 ### 예약 체크인
 
-#### POST /external/app/reservation/check-in
+#### POST /external/app/reservation/checkin
 
 예약을 체크인합니다 (QR 코드 스캔).
 
 **인증**: 필요 (memberProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "id": "reservation-uuid",
+  "note": "체크인 메모 (선택사항)"
+}
+```
+
+**응답**: 없음 (200 OK)
+
+**체크인 가능 조건**:
+- 예약 상태가 CONFIRMED여야 함
+- 현재 시간이 타임슬롯 시작 시간 30분 전부터 종료 시간 이내여야 함
+- 본인의 예약이어야 함
+
+## Admin API (관리자용)
+
+### 예약 호스트 관리
+
+#### POST /external/admin/reservation/hosts
+
+예약 호스트 목록을 조회합니다.
+
+**인증**: 필요 (adminProtectedProcedure)
 
 **요청 바디**:
 ```json
@@ -1042,6 +1108,108 @@ enum ReservationHostKind {
 
 **인증**: 필요 (adminProtectedProcedure)
 
+### 가격 항목 관리
+
+#### POST /external/admin/reservation/price-items
+
+예약 가격 항목 목록을 조회합니다.
+
+**인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "contentId": "content-uuid",
+  "kind": "MENU",
+  "isActive": true,
+  "orderBy": "index_asc",
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+**응답**:
+```json
+{
+  "list": [
+    {
+      "id": "price-item-uuid",
+      "kind": "MENU",
+      "name": "런치 코스",
+      "description": "2코스 메뉴",
+      "basePrice": 50000,
+      "priceType": "FIXED",
+      "minQuantity": 1,
+      "maxQuantity": 10,
+      "images": ["https://..."],
+      "index": "a0000001",
+      "isActive": true,
+      "createdAt": "2025-06-01T10:00:00Z",
+      "updatedAt": "2025-06-01T10:00:00Z",
+      "content": {
+        "id": "content-uuid",
+        "name": "뮤지컬 마틸다"
+      }
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "pageCount": 1,
+  "totalCount": 1
+}
+```
+
+#### POST /external/admin/reservation/price-item/create
+
+예약 가격 항목을 생성합니다.
+
+**인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "contentId": "content-uuid",
+  "kind": "ADULT",
+  "name": "성인 요금",
+  "description": "만 19세 이상",
+  "basePrice": 50000,
+  "priceType": "FIXED",
+  "minQuantity": 1,
+  "maxQuantity": 10,
+  "images": ["https://..."],
+  "isActive": true
+}
+```
+
+#### POST /external/admin/reservation/price-item/update
+
+예약 가격 항목을 수정합니다.
+
+**인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "id": "price-item-uuid",
+  "name": "런치 코스 (수정)",
+  "basePrice": 55000,
+  "idForBefore": "other-price-item-uuid"
+}
+```
+
+#### POST /external/admin/reservation/price-item/delete
+
+예약 가격 항목을 삭제합니다.
+
+**인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "id": "price-item-uuid"
+}
+```
+
 ### 예약 관리
 
 #### POST /external/admin/reservations
@@ -1061,6 +1229,8 @@ enum ReservationHostKind {
   "reasonCodeIn": ["USER_CREATE_PENDING"],
   "startsAfter": "2025-06-01",
   "startsBefore": "2025-06-30",
+  "createdAfter": "2025-05-01",
+  "createdBefore": "2025-05-31",
   "memName": "홍길동",
   "memNo": "1234567890",
   "phoneNumber": "+821012345678",
@@ -1070,6 +1240,43 @@ enum ReservationHostKind {
   "orderBy": "createdAt_desc",
   "page": 1,
   "pageSize": 20
+}
+```
+
+**응답** (includesStats=false):
+페이지네이션 응답 포맷 참조
+
+**응답** (includesStats=true):
+```json
+{
+  "list": [...],
+  "page": 1,
+  "pageSize": 20,
+  "pageCount": 5,
+  "totalCount": 100,
+  "stats": {
+    "totalCapacity": 1000,
+    "availableCapacity": 500,
+    "pendingCount": 50,
+    "confirmedCount": 200,
+    "cancelledCount": 30,
+    "usedCount": 150,
+    "noshowCount": 20,
+    "totalPendingSize": 100,
+    "totalConfirmedSize": 400,
+    "totalCancelledSize": 60,
+    "totalUsedSize": 300,
+    "totalNoshowSize": 40,
+    "actualReservedSize": 840,
+    "actualConfirmedSize": 740,
+    "actualCancelledSize": 60,
+    "reservationRate": 84.0,
+    "confirmationRate": 74.0,
+    "utilizationRate": 40.5,
+    "cancellationRate": 6.7,
+    "noshowRate": 5.4,
+    "timeSlotStats": [...]
+  }
 }
 ```
 
@@ -1144,6 +1351,47 @@ enum ReservationHostKind {
 전체 예약 통계를 조회합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
+
+### 회원 관리
+
+#### GET /external/admin/member/get-coupons
+
+회원의 쿠폰 목록을 조회합니다.
+
+**인증**: 필요 (adminProtectedProcedure)
+
+**요청 파라미터**:
+```json
+{
+  "memberId": "member-uuid",  // optional (memberId 또는 memNo 중 하나 필수)
+  "memNo": "1234567890",      // optional (memberId 또는 memNo 중 하나 필수)
+  "kind": "HOME_APPLIANCE_CONCIERGE"  // optional (MembershipBenefitsKind)
+}
+```
+
+**응답**:
+```json
+{
+  "list": [
+    {
+      "sn": "COUPON123456",
+      "status": "ISSUED",  // CouponPoolStatus: ISSUED, REDEEMED, EXPIRED
+      "issuedAt": "2025-01-01T00:00:00Z",
+      "redeemedAt": null,
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2025-12-31T23:59:59Z",
+      "coupon": {
+        "kind": "FREE_APPLIANCE_RELOCATION_SERVICE",  // IntegratedCouponKind
+        "name": "무료 가전 이전 설치 서비스",
+        "discountType": "PASS",  // CouponDiscountType: FIXED, PERCENTAGE, PASS
+        "discountValue": "0",
+        "maxDiscount": "0"
+      },
+      "reservation": null  // 또는 { "id": "reservation-uuid" }
+    }
+  ]
+}
+```
 
 ## 에러 코드
 

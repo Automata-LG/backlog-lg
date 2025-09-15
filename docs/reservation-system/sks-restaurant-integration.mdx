@@ -129,7 +129,6 @@ model ReservationSection {
   id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String @db.VarChar(35)
   description String
-  metadata    Json?
 
   host         ReservationHost   @relation(fields: [hostId], references: [id])
   hostId       String            @db.Uuid
@@ -490,7 +489,7 @@ trpc.reservation.app.cancel()    // 예약 취소
 
 // 레스토랑 전용 API 추가
 trpc.reservation.restaurant.assignTable()  // 테이블 배정
-trpc.reservation.restaurant.checkIn()      // 체크인 처리
+trpc.reservation.restaurant.checkin()      // 체크인 처리
 ```
 
 ### 호스트별 필터링
@@ -552,7 +551,136 @@ const diningReservations = await trpc.reservation.app.list({
   </Card>
 </CardGroup>
 
-## 8. 검증 및 제약사항
+## 8. 가격 항목 시스템
+
+### 가격 항목 구조
+
+SKS 레스토랑은 예약 시 가격 정보를 관리하기 위해 `ReservationPriceItem` 모델을 사용합니다.
+
+```typescript
+interface ReservationPriceItem {
+  id: string;
+  kind: ReservationPriceKind;      // TICKET, MENU, SERVICE
+  name: string;                    // "런치 코스", "디너 코스" 등
+  description?: string;            // 상세 설명
+  basePrice: number;              // 기본 가격
+  priceType: ReservationPriceType; // FIXED, PER_UNIT
+  minQuantity: number;            // 최소 수량
+  maxQuantity: number;            // 최대 수량 (0이면 무제한)
+  images: string[];               // 메뉴 이미지
+  index: string;                  // Fractional 인덱싱 (순서)
+}
+```
+
+### 멤버십 등급별 가격 차별화
+
+```typescript
+// utils-coupon-sks.ts의 할인 로직
+const membershipDiscount = {
+  AS00: 30,  // 다이아몬드 블랙: 30% 할인
+  AS01: 20,  // 다이아몬드: 20% 할인
+  AS02: 15,  // 플래티넘: 15% 할인
+  AS03: 10,  // 골드: 10% 할인
+  AS04: 5,   // 실버: 5% 할인
+  AS05: 5    // 실버: 5% 할인
+};
+
+// 실제 가격 계산
+function calculatePrice(priceItem: ReservationPriceItem, memberGrade: string) {
+  const discount = membershipDiscount[memberGrade] || 0;
+  const finalPrice = priceItem.basePrice * (1 - discount / 100);
+  return finalPrice;
+}
+```
+
+### 방문 시간 선택 기능
+
+SKS 레스토랑은 운영 시간 내에서 유연한 방문 시간 선택을 지원합니다.
+
+```typescript
+interface ReservationTimeSlot {
+  // 기존 필드들...
+  visitIntervalMinutes?: number;  // 방문 시간 간격 (예: 30분 단위)
+}
+
+// 예약 시 방문 시간 저장
+interface Reservation {
+  // 기존 필드들...
+  additionalInfo: {
+    visitTime?: string;  // ISO 8601 형식의 방문 시간
+    // 다른 추가 정보들...
+  };
+}
+```
+
+### API 사용 예시
+
+```typescript
+// 가격 항목 조회
+const priceItems = await trpc.reservation.admin.priceItems({
+  contentId: 'sks-lunch-content-id',
+  kind: 'MENU'
+});
+
+// 가격 항목 생성
+await trpc.reservation.admin.priceItemCreate({
+  contentId: 'sks-dinner-content-id',
+  kind: 'MENU',
+  name: '프리미엄 디너 코스',
+  basePrice: 150000,
+  priceType: 'FIXED',
+  minQuantity: 1,
+  maxQuantity: 10
+});
+
+// 예약 생성 시 방문 시간 포함
+await trpc.reservation.app.create({
+  timeSlotId: 'timeslot-id',
+  groupSize: 2,
+  phoneNumber: '+821012345678',
+  requestNote: '창가 자리 요청',
+  additionalInfo: {
+    visitTime: '2025-06-01T19:30:00+09:00',
+    vehicleNumber: '12가3456'
+  }
+});
+
+// 예약 체크인
+await trpc.reservation.app.checkIn({
+  id: 'reservation-id',
+  note: '19:30 도착 확인'
+});
+```
+
+### 체크인 시스템
+
+SKS 레스토랑 예약의 체크인 프로세스:
+
+```typescript
+// 체크인 가능 여부 확인 함수
+function canCheckInReservation(reservation: Reservation, now: Date) {
+  // 1. 예약 상태 확인 - CONFIRMED만 체크인 가능
+  if (reservation.status !== 'CONFIRMED') {
+    return { canCheckIn: false, message: '확정된 예약만 체크인 가능합니다' };
+  }
+
+  // 2. 시간 확인 - 시작 30분 전부터 종료 시간까지
+  const checkInStartTime = new Date(reservation.timeSlot.startAt);
+  checkInStartTime.setMinutes(checkInStartTime.getMinutes() - 30);
+
+  if (now < checkInStartTime) {
+    return { canCheckIn: false, message: '체크인은 예약 시간 30분 전부터 가능합니다' };
+  }
+
+  if (now > reservation.timeSlot.endAt) {
+    return { canCheckIn: false, message: '예약 시간이 종료되었습니다' };
+  }
+
+  return { canCheckIn: true, message: '체크인 가능' };
+}
+```
+
+## 9. 검증 및 제약사항
 
 ### 1일 1건 제한
 ```typescript

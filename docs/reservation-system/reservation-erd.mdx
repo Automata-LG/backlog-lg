@@ -127,6 +127,7 @@ erDiagram
         Int totalCapacity
         Int minGroupSize
         Int maxGroupSize
+        Int visitIntervalMinutes
         Json openConfig
         UUID contentId FK
         Boolean isActive
@@ -235,6 +236,23 @@ erDiagram
         DateTime createdAt
     }
 
+    ReservationPriceItem {
+        UUID id PK
+        ReservationPriceKind kind
+        String name
+        String description
+        Int basePrice
+        ReservationPriceType priceType
+        Int minQuantity
+        Int maxQuantity
+        String[] images
+        UUID contentId FK
+        String index
+        Boolean isActive
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
     %% 관계 정의
     ReservationHost ||--o{ ReservationSpace : "has (informational)"
     ReservationHost ||--o{ ReservationSection : "has (operational)"
@@ -244,6 +262,7 @@ erDiagram
     ReservationSection }o--o| Reservation : "optionally manages"
     ReservationUnit }o--o| Reservation : "optionally assigned"
     ReservationContent ||--o{ ReservationTimeSlot : "scheduled at"
+    ReservationContent ||--o{ ReservationPriceItem : "has pricing"
     ReservationContent ||--o{ Terms : "has"
     ReservationTimeSlot ||--o{ Reservation : "booked for"
     Reservation ||--o{ ReservationHist : "has"
@@ -431,11 +450,12 @@ model ReservationContent {
   operatingStartAt  DateTime?
   operatingEndAt    DateTime?
 
-  host      ReservationHost       @relation(fields: [hostId], references: [id])
-  hostId    String                @db.Uuid
-  space     ReservationSpace?     @relation(fields: [spaceId], references: [id])
-  spaceId   String?               @db.Uuid
-  timeSlots ReservationTimeSlot[]
+  host       ReservationHost        @relation(fields: [hostId], references: [id])
+  hostId     String                 @db.Uuid
+  space      ReservationSpace?      @relation(fields: [spaceId], references: [id])
+  spaceId    String?                @db.Uuid
+  timeSlots  ReservationTimeSlot[]
+  priceItems ReservationPriceItem[]
   terms     Terms[]
 
   isActive  Boolean  @default(true)
@@ -447,13 +467,14 @@ model ReservationContent {
 }
 
 model ReservationTimeSlot {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  startAt       DateTime
-  endAt         DateTime
-  totalCapacity Int
-  minGroupSize  Int
-  maxGroupSize  Int
-  openConfig    Json
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  startAt              DateTime
+  endAt                DateTime
+  totalCapacity        Int
+  minGroupSize         Int
+  maxGroupSize         Int
+  visitIntervalMinutes Int?     // 방문 시간 간격 (분 단위)
+  openConfig           Json
 
   content      ReservationContent @relation(fields: [contentId], references: [id])
   contentId    String             @db.Uuid
@@ -473,6 +494,41 @@ enum ReservationStatus {
   USED      // 이용 완료
   CANCELLED // 예약 취소
   NOSHOW    // 노쇼
+}
+
+enum ReservationPriceKind {
+  TICKET  // 티켓
+  MENU    // 메뉴
+  SERVICE // 서비스
+}
+
+enum ReservationPriceType {
+  FIXED    // 고정 가격
+  PER_UNIT // 단위당 가격
+}
+
+model ReservationPriceItem {
+  id           String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind         ReservationPriceKind
+  name         String
+  description  String?
+  basePrice    Int
+  priceType    ReservationPriceType
+  minQuantity  Int                  @default(1)
+  maxQuantity  Int                  @default(0) // 0이면 무제한
+  images       String[]
+
+  content   ReservationContent @relation(fields: [contentId], references: [id])
+  contentId String             @db.Uuid
+
+  index     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([contentId, kind])
+  @@index([contentId, index])
+  @@map(name: "reservationPriceItem")
 }
 
 model Reservation {
