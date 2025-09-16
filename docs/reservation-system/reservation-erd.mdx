@@ -241,11 +241,11 @@ erDiagram
         ReservationPriceKind kind
         String name
         String description
+        String[] images
         Int basePrice
         ReservationPriceType priceType
         Int minQuantity
         Int maxQuantity
-        String[] images
         UUID contentId FK
         String index
         Boolean isActive
@@ -474,7 +474,7 @@ model ReservationTimeSlot {
   minGroupSize         Int
   maxGroupSize         Int
   visitIntervalMinutes Int?     // 방문 시간 간격 (분 단위)
-  openConfig           Json
+  openConfig           Json     // {openType: 'BATCH'|'SEQUENTIAL'|'GRADED', ...}
 
   content      ReservationContent @relation(fields: [contentId], references: [id])
   contentId    String             @db.Uuid
@@ -487,6 +487,42 @@ model ReservationTimeSlot {
   @@index([contentId, isActive, startAt])
   @@map(name: "reservationTimeSlot")
 }
+
+// additionalInfo JSON 필드 구조 예시:
+// {
+//   visitTime?: string,          // 방문 예정 시간 (HH:MM 형식)
+//   vehicleNumber?: string,      // 차량 번호 (예: 123-가-1234)
+//   needsShowroomTour?: boolean, // 쇼룸 투어 필요 여부
+//   needsProductConsultation?: boolean // 제품 상담 필요 여부
+// }
+
+// openConfig JSON 필드 구조 예시:
+// BATCH: {
+//   openType: 'BATCH',
+//   openStartAt: 'ISO DateTime',
+//   openEndAt: 'ISO DateTime',
+//   reservationByHours?: number,
+//   modificationByHours?: number
+// }
+// SEQUENTIAL: {
+//   openType: 'SEQUENTIAL',
+//   openStartByDays: number,
+//   openEndByDays: number,
+//   modificationByHours?: number
+// }
+// GRADED: {
+//   openType: 'GRADED',
+//   openStartAtByGrade?: {
+//     AS00: 'ISO DateTime',
+//     AS01: 'ISO DateTime',
+//     AS02: 'ISO DateTime',
+//     AS03: 'ISO DateTime',
+//     AS04: 'ISO DateTime',
+//     AS05: 'ISO DateTime'
+//   },
+//   reservationByDays?: number,
+//   modificationByDays?: number
+// }
 
 enum ReservationStatus {
   PENDING   // 예약 대기
@@ -508,20 +544,20 @@ enum ReservationPriceType {
 }
 
 model ReservationPriceItem {
-  id           String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  kind         ReservationPriceKind
-  name         String
-  description  String?
-  basePrice    Int
-  priceType    ReservationPriceType
-  minQuantity  Int                  @default(1)
-  maxQuantity  Int                  @default(0) // 0이면 무제한
-  images       String[]
+  id          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind        ReservationPriceKind
+  name        String               @db.VarChar(35)
+  description String?
+  images      String[]             @db.VarChar(2048)
+  basePrice   Int
+  priceType   ReservationPriceType
+  minQuantity Int                  @default(1)
+  maxQuantity Int                  @default(0) // 0이면 무제한
 
-  content   ReservationContent @relation(fields: [contentId], references: [id])
+  content   ReservationContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
   contentId String             @db.Uuid
 
-  index     String   @unique
+  index     String
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

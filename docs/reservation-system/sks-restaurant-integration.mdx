@@ -304,11 +304,16 @@ const restaurantTimeSlot: ReservationTimeSlot = {
   totalCapacity: 50,                          // 전체 수용 인원
   minGroupSize: 2,                            // 최소 예약 인원
   maxGroupSize: 8,                            // 최대 예약 인원
+  visitIntervalMinutes: 30,                  // 30분 단위 방문 시간
   openConfig: {                               // GRADED 타입 설정
     openType: 'GRADED',
     openStartAtByGrade: {
-      'AS00': '2025-01-01T10:00:00',         // 2개월 전 오픈
-      'AS01': '2025-02-01T10:00:00'          // 1개월 전 오픈
+      'AS00': '2025-07-01T10:00:00',         // 2개월 전 오픈 (9월 예약 기준)
+      'AS01': '2025-08-01T10:00:00',         // 1개월 전 오픈
+      'AS02': '2025-08-01T10:00:00',
+      'AS03': '2025-08-01T10:00:00',
+      'AS04': '2025-08-01T10:00:00',
+      'AS05': '2025-08-01T10:00:00'
     },
     reservationByDays: 1,                    // D-1일 23:59:59까지 예약 가능
     modificationByDays: 2                    // D-2일 23:59:59까지 수정/취소 가능
@@ -317,7 +322,89 @@ const restaurantTimeSlot: ReservationTimeSlot = {
 };
 ```
 
-### 3.4 물리적 제약 자동 처리
+### 3.4 GRADED 타입과 SKS_RESERVATION_POLICY
+
+<Note>
+  **등급별 차등 오픈 시스템**
+
+  GRADED 타입은 회원 등급에 따라 예약 오픈 시기를 차등화합니다:
+  - AS00 (다이아몬드 블랙): 이벤트 2개월 전 오픈
+  - AS01~AS05 (기타 등급): 이벤트 1개월 전 오픈
+  - 비회원: AS05와 동일한 시기에 오픈
+</Note>
+
+```typescript
+// SKS_RESERVATION_POLICY 정의
+export const SKS_RESERVATION_POLICY = {
+  OPEN_MONTHS_BEFORE: {
+    AS00: 2,  // 다이아몬드 블랙: 2개월 전
+    AS01: 1,  // 다이아몬드: 1개월 전
+    AS02: 1,  // 플래티넘: 1개월 전
+    AS03: 1,  // 골드: 1개월 전
+    AS04: 1,  // 실버: 1개월 전
+    AS05: 1   // 실버(미구매): 1개월 전
+  },
+  OPEN_HOUR: 10  // 10:00 KST
+} as const;
+
+// openStartAtByGrade 미제공 시 자동 계산
+const timeSlotWithAutoCalculation = {
+  // ...
+  openConfig: {
+    openType: 'GRADED',
+    // openStartAtByGrade 생략 - 각 슬롯별로 자동 계산됨
+    reservationByDays: 1,
+    modificationByDays: 2
+  }
+};
+```
+
+### 3.5 유닛 기반 수용 인원 자동 계산
+
+<Note>
+  **calculateCapacityFromUnits 옵션**
+
+  타임슬롯 템플릿별로 유닛 기반 수용 인원을 자동 계산할 수 있습니다:
+  - `calculateCapacityFromUnits: true`: 유닛의 maxCapacity 합계로 자동 계산
+  - `totalCapacity` 설정 시: 상한선으로 작용 (유닛 합계와 비교하여 작은 값 사용)
+</Note>
+
+```typescript
+const batchCreateInput = {
+  contentId: 'content-uuid',
+  operatingStartDate: new Date('2025-09-01'),
+  operatingEndDate: new Date('2025-12-31'),
+  timeUnit: 1440,  // 24시간 = 일 단위 슬롯
+  minGroupSize: 2,
+  maxGroupSize: 8,
+  visitIntervalMinutes: 30,
+  openConfig: {
+    openType: 'GRADED',
+    // openStartAtByGrade 생략 - 자동 계산
+    reservationByDays: 1,
+    modificationByDays: 2
+  },
+  timeSlotTemplates: [
+    {
+      operatingHours: {
+        days: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
+        hours: [{ openTime: '11:00', closeTime: '21:00' }]
+      },
+      calculateCapacityFromUnits: true,  // 유닛 기반 계산 활성화
+      totalCapacity: 50  // 선택적 상한선 (유닛 합계가 60이면 50으로 제한)
+    }
+  ]
+};
+
+// 유닛 합계 예시
+// 홀 4인 테이블 6개: 4 × 6 = 24
+// 홀 6인 테이블 2개: 6 × 2 = 12
+// 룸 8인석 1개: 8 × 1 = 8
+// 총 유닛 합계: 44명
+// totalCapacity: min(44, 50) = 44명
+```
+
+### 3.6 물리적 제약 자동 처리
 
 <Note>
   **물리적 제약은 Space/Unit으로 자동 처리**

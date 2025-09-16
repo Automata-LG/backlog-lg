@@ -10,13 +10,13 @@ LG 멤버십 예약 시스템은 다음 일곱 가지 핵심 리소스로 구성
 
 | 리소스 | 설명 | 예시 |
 | --- | --- | --- |
-| **예약 호스트** | 예약 가능한 장소의 최상위 개념 | LG 아트센터, SKS 레스토랑 |
-| **예약 스페이스** | 호스트 내 정보성 공간 (UI 표시용) | 아트센터: 메인홀, 소극장 / SKS: 다이닝룸, 카페 |
-| **예약 섹션** | 호스트 내 실제 예약 관리 단위 | 아트센터: 1층, 2층 / SKS: 프라이빗 홀, 메인 홀 |
-| **예약 유닛** | 섹션 내 구체적인 예약 단위 | 아트센터: A구역, VIP석 / SKS: 테이블, 룸 |
-| **예약 컨텐츠** | 호스트에서 진행되는 구체적인 이벤트/프로그램 | 뮤지컬 '마틸다', 클래식 연주회 |
-| **예약 타임슬롯** | 컨텐츠의 특정 시간대 | 2025년 6월 1일 14:00-16:00 |
-| **예약** | 사용자가 특정 타임슬롯에 신청한 예약 정보 | 멤버십 번호 123456이 신청한 2명 예약 |
+| **예약 호스트** | 예약 가능한 장소의 최상위 개념 | SKS 레스토랑 강남점, SKS 레스토랑 판교점 |
+| **예약 스페이스** | 호스트 내 정보성 공간 (UI 표시용) | 다이닝룸, 프라이빗 룸, 테라스 |
+| **예약 섹션** | 호스트 내 실제 예약 관리 단위 | 메인 홀, 프라이빗 룸 |
+| **예약 유닛** | 섹션 내 구체적인 예약 단위 | 테이블 T1-T10, 룸 R1-R5 |
+| **예약 컨텐츠** | 호스트에서 진행되는 구체적인 이벤트/프로그램 | 런치 코스, 디너 코스, 와인 디너 |
+| **예약 타임슬롯** | 컨텐츠의 특정 시간대 | 2025년 6월 1일 12:00-14:00 (런치), 18:00-20:00 (디너) |
+| **예약** | 사용자가 특정 타임슬롯에 신청한 예약 정보 | 멤버십 번호 123456이 신청한 4명 예약 |
 
 각 리소스는 관리자용(Admin)과 사용자용(App) 두 가지 인터페이스로 API가 제공됩니다.
 
@@ -70,131 +70,222 @@ erDiagram
     ReservationSpace }o--o{ ReservationContent : "displays in"
     ReservationSection ||--o{ ReservationUnit : "contains"
     ReservationContent ||--o{ ReservationTimeSlot : "scheduled at"
+    ReservationContent ||--o{ ReservationPriceItem : "has pricing"
+    ReservationContent ||--o{ Terms : "has"
     ReservationTimeSlot ||--o{ Reservation : "booked for"
     ReservationSection }o--o| Reservation : "optionally manages"
     ReservationUnit }o--o| Reservation : "optionally assigned"
-    Member ||--o{ Reservation : "makes"
+    Reservation }o--o| CouponPool : "may use"
     Reservation ||--o{ ReservationHist : "has"
+    Member ||--o{ Reservation : "makes"
+    Member ||--o{ TermsAgreement : "agrees to"
+    Member ||--o{ CouponPool : "owns"
     Admin ||--o{ ReservationHist : "creates"
+    Terms ||--o{ TermsAgreement : "has"
+    TermsAgreement ||--o{ TermsAgreementHist : "has"
+    Coupon ||--o{ CouponPool : "has"
+    CouponPool ||--o{ CouponPoolHist : "has"
 
     ReservationHost {
-        uuid id PK
-        string kind
-        string name
-        json address
-        string phoneNumber
-        json operatingHours
-        text[] images
-        text description
-        boolean isActive
+        UUID id PK
+        ReservationHostKind kind
+        String name
+        Json address
+        String phoneNumber
+        Json operatingHours
+        Json holidays
+        String[] images
+        String description
+        String instructions
+        DateTime displayStartAt
+        DateTime displayEndAt
+        DateTime operatingStartAt
+        DateTime operatingEndAt
+        Boolean isActive
     }
 
     ReservationSpace {
-        uuid id PK
-        uuid hostId FK
-        string name
-        text description
-        json metadata
-        boolean isActive
+        UUID id PK
+        UUID hostId FK
+        String name
+        String description
+        Json metadata
+        Boolean isActive
     }
 
     ReservationSection {
-        uuid id PK
-        uuid hostId FK
-        string name
-        text description
-        json metadata
-        boolean isActive
+        UUID id PK
+        UUID hostId FK
+        String name
+        String description
+        Json metadata
+        Boolean isActive
     }
 
     ReservationUnit {
-        uuid id PK
-        uuid sectionId FK
-        string code
-        string name
-        text description
-        int minCapacity
-        int maxCapacity
-        json metadata
-        string index
-        boolean isActive
+        UUID id PK
+        UUID sectionId FK
+        String code UK
+        String name
+        String description
+        Int minCapacity
+        Int maxCapacity
+        Json metadata
+        String index
+        Boolean isActive
     }
 
     ReservationContent {
-        uuid id PK
-        uuid hostId FK
-        uuid spaceId FK "optional"
-        string name
-        text description
-        text[] images
-        text instructions
-        json contactInfo
-        json restrictionConfig
-        json confirmConfig
-        datetime displayStartAt
-        datetime displayEndAt
-        datetime openStartAt
-        datetime openEndAt
-        datetime operatingStartAt
-        datetime operatingEndAt
-        boolean isActive
+        UUID id PK
+        UUID hostId FK
+        UUID spaceId FK "optional"
+        String name
+        String description
+        String[] images
+        String instructions
+        Json contactInfo
+        Json restrictionConfig
+        Json confirmConfig
+        DateTime displayStartAt
+        DateTime displayEndAt
+        DateTime openStartAt
+        DateTime openEndAt
+        DateTime operatingStartAt
+        DateTime operatingEndAt
+        Boolean isActive
     }
 
     ReservationTimeSlot {
-        uuid id PK
-        uuid contentId FK
-        datetime startAt
-        datetime endAt
-        int minGroupSize
-        int maxGroupSize
-        int totalCapacity
-        int remainingCapacity
-        string openType
-        datetime openStartAt
-        datetime openEndAt
-        boolean isActive
+        UUID id PK
+        UUID contentId FK
+        DateTime startAt
+        DateTime endAt
+        Int minGroupSize
+        Int maxGroupSize
+        Int totalCapacity
+        Int visitIntervalMinutes
+        Json openConfig
+        Boolean isActive
+    }
+
+    ReservationPriceItem {
+        UUID id PK
+        UUID contentId FK
+        ReservationPriceKind kind
+        String name
+        String description
+        String[] images
+        Int basePrice
+        ReservationPriceType priceType
+        Int minQuantity
+        Int maxQuantity
+        String index
+        Boolean isActive
     }
 
     Reservation {
-        uuid id PK
-        uuid timeSlotId FK
-        uuid sectionId FK "optional"
-        uuid unitId FK "optional"
-        uuid memberId FK
-        string status
-        string reasonCode
-        int numberOfPeople
-        text note
-        datetime createdAt
-        datetime updatedAt
+        UUID id PK
+        String sn UK
+        UUID timeSlotId FK
+        UUID sectionId FK "optional"
+        UUID unitId FK "optional"
+        UUID memberId FK
+        UUID couponPoolId FK "optional"
+        ReservationStatus status
+        Int groupSize
+        String phoneNumber
+        String gradeAtIssue
+        String requestNote
+        Json additionalInfo
+        DateTime createdAt
+        DateTime updatedAt
     }
 
     ReservationHist {
-        int id PK
-        uuid reservationId FK
-        uuid adminId FK "optional"
-        string status
-        string reasonCode
-        json changes
-        text note
-        datetime createdAt
+        Int id PK
+        UUID reservationId FK
+        UUID adminId FK "optional"
+        ReservationStatus status
+        String reasonCode
+        Json changes
+        String note
+        DateTime createdAt
+    }
+
+    Terms {
+        UUID id PK
+        UUID contentId FK
+        TermsKind kind
+        String sn
+        String name
+        Int rev
+        String content
+        String link
+        Boolean isMandatory
+        String index
+        Boolean isActive
+    }
+
+    TermsAgreement {
+        UUID id PK
+        UUID termsId FK
+        UUID memberId FK
+        Boolean isAgreed
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    TermsAgreementHist {
+        Int id PK
+        UUID termsAgreementId FK
+        Boolean isAgreed
+        DateTime createdAt
+    }
+
+    CouponPool {
+        UUID id PK
+        UUID couponId FK
+        UUID memberId FK
+        String sn UK
+        CouponPoolStatus status
+        String gradeAtIssue
+        DateTime issuedAt
+        DateTime redeemedAt
+    }
+
+    CouponPoolHist {
+        Int id PK
+        UUID couponPoolId FK
+        CouponPoolStatus status
+        String note
+        DateTime createdAt
+    }
+
+    Coupon {
+        UUID id PK
+        CouponKind kind
+        String name
+        String description
+        CouponDiscountType discountType
+        Decimal discountValue
+        Decimal maxDiscount
     }
 
     Member {
-        uuid id PK
-        string memNo UK
-        string name
-        string phoneNumber
-        string email
-        boolean isActive
+        UUID id PK
+        String memNo UK
+        String name
+        String phoneNumber
+        String email
+        Boolean isActive
     }
 
     Admin {
-        uuid id PK
-        string email UK
-        string name
-        string phoneNumber
-        boolean isActive
+        UUID id PK
+        String email UK
+        String name
+        String phoneNumber
+        Boolean isActive
     }
 ```
 
@@ -250,6 +341,7 @@ export const ConfirmType = {
 export const OpenType = {
   BATCH: 'BATCH',       // 일괄 오픈
   SEQUENTIAL: 'SEQUENTIAL', // 순차 오픈
+  GRADED: 'GRADED',     // 등급별 차등 오픈
 } as const;
 ```
 
@@ -275,9 +367,9 @@ enum ReservationHostKind {
 **요청 파라미터**:
 ```typescript
 {
-  kind?: ReservationHostKind  // 호스트 종류 필터
-  page?: number               // 페이지 번호 (기본값: 1)
-  pageSize?: number          // 페이지 크기 (기본값: 20)
+  kind?: 'ART_CENTER' | 'RESTAURANT'  // [선택] 호스트 종류 필터
+  page?: number                        // [선택] 페이지 번호 (기본값: 1)
+  pageSize?: number                    // [선택] 페이지 크기 (기본값: 10, 최대: 500)
 }
 ```
 
@@ -286,28 +378,63 @@ enum ReservationHostKind {
 {
   "list": [
     {
-      "id": "uuid",
-      "kind": "ART_CENTER",
-      "name": "LG 아트센터",
+      "id": "770e8400-e29b-41d4-a716-446655440000",
+      "kind": "RESTAURANT",
+      "name": "SKS 레스토랑 강남점",
       "address": {
         "zipCode": "06159",
-        "mainAddress": "서울시 강남구",
-        "detailAddress": "LG아트센터"
+        "mainAddress": "서울시 강남구 테헤란로 123",
+        "detailAddress": "SKS빌딩 1층"
       },
-      "phoneNumber": "02-2005-0114",
-      "operatingHours": [...],
-      "images": ["url1", "url2"],
-      "description": "설명",
+      "phoneNumber": "02-1234-5678",  // nullable
+      "operatingStartAt": "2025-01-01T00:00:00.000Z",  // nullable
+      "operatingEndAt": "2025-12-31T23:59:59.000Z",  // nullable
+      "operatingHours": [
+        {
+          "days": ["MON", "TUE", "WED", "THU", "FRI"],
+          "hours": [
+            {
+              "openTime": "11:30",
+              "closeTime": "14:30"
+            },
+            {
+              "openTime": "17:30",
+              "closeTime": "22:00"
+            }
+          ]
+        }
+      ],
+      "holidays": {  // nullable
+        "regular": {
+          "weekly": ["SUN"],
+          "monthly": [],
+          "yearly": [
+            {"month": 1, "day": 1},
+            {"month": 12, "day": 25}
+          ]
+        },
+        "specific": ["2025-02-08", "2025-02-09"]
+      },
+      "description": "프리미엄 다이닝 레스토랑",
+      "images": [
+        "https://example.com/restaurant/gangnam-1.jpg",
+        "https://example.com/restaurant/gangnam-2.jpg"
+      ],
+      "instructions": "예약 시 알레르기 사전 고지 부탁드립니다",  // nullable
       "spaces": [
         {
-          "id": "space-uuid",
-          "name": "메인홀"
+          "id": "880e8400-e29b-41d4-a716-446655440000",
+          "name": "메인 홀"
+        },
+        {
+          "id": "990e8400-e29b-41d4-a716-446655440000",
+          "name": "프라이빗 룸"
         }
       ]
     }
   ],
   "page": 1,
-  "pageSize": 20,
+  "pageSize": 10,
   "pageCount": 1,
   "totalCount": 3
 }
@@ -324,9 +451,31 @@ enum ReservationHostKind {
 **요청 파라미터**:
 ```typescript
 {
-  hostId: string      // [필수] 호스트 ID
-  page?: number       // 페이지 번호
-  pageSize?: number   // 페이지 크기
+  hostId: string      // [필수] 호스트 ID (UUID)
+  page?: number       // [선택] 페이지 번호 (기본값: 1)
+  pageSize?: number   // [선택] 페이지 크기 (기본값: 10, 최대: 500)
+}
+```
+
+**응답**:
+```json
+{
+  "list": [
+    {
+      "id": "880e8400-e29b-41d4-a716-446655440000",
+      "name": "메인 홀",
+      "description": "최대 100명 수용 가능한 메인 다이닝 공간"
+    },
+    {
+      "id": "990e8400-e29b-41d4-a716-446655440000",
+      "name": "프라이빗 룸",
+      "description": "소규모 모임을 위한 독립된 공간 (4-8명)"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10,
+  "pageCount": 1,
+  "totalCount": 2
 }
 ```
 
@@ -341,9 +490,31 @@ enum ReservationHostKind {
 **요청 파라미터**:
 ```typescript
 {
-  hostId: string      // [필수] 호스트 ID
-  page?: number       // 페이지 번호
-  pageSize?: number   // 페이지 크기 (기본값: 10)
+  hostId: string      // [필수] 호스트 ID (UUID)
+  page?: number       // [선택] 페이지 번호 (기본값: 1)
+  pageSize?: number   // [선택] 페이지 크기 (기본값: 10, 최대: 500)
+}
+```
+
+**응답**:
+```json
+{
+  "list": [
+    {
+      "id": "aa0e8400-e29b-41d4-a716-446655440000",
+      "name": "메인 홀 A구역",
+      "description": "레스토랑 메인 홀 중앙 구역 (테이블 1-10)"
+    },
+    {
+      "id": "bb0e8400-e29b-41d4-a716-446655440000",
+      "name": "메인 홀 B구역",
+      "description": "레스토랑 메인 홀 창가 구역 (테이블 11-20)"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10,
+  "pageCount": 1,
+  "totalCount": 2
 }
 ```
 
@@ -358,10 +529,59 @@ enum ReservationHostKind {
 **요청 파라미터**:
 ```typescript
 {
-  hostId?: string     // 호스트 ID 필터
-  spaceId?: string    // 스페이스 ID 필터 (정보성 연결)
-  page?: number       // 페이지 번호
-  pageSize?: number   // 페이지 크기 (기본값: 10)
+  hostId?: string     // [선택] 호스트 ID 필터 (UUID)
+  spaceId?: string    // [선택] 스페이스 ID 필터 (UUID)
+  page?: number       // [선택] 페이지 번호 (기본값: 1)
+  pageSize?: number   // [선택] 페이지 크기 (기본값: 10, 최대: 500)
+}
+```
+
+**응답**:
+```json
+{
+  "list": [
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440000",
+      "name": "런치 코스 A",
+      "description": "전채, 메인, 디저트로 구성된 프리미엄 3코스 런치",
+      "images": [
+        "https://example.com/lunch-course-a-1.jpg",
+        "https://example.com/lunch-course-a-2.jpg"
+      ],
+      "instructions": "예약 시간 10분 전까지 도착 부탁드립니다",  // nullable
+      "contactInfo": {  // nullable
+        "phoneNumbers": [
+          {
+            "type": "MAIN",
+            "number": "+8221234567",
+            "description": "예약 문의"
+          }
+        ]
+      },
+      "restrictionConfig": {  // nullable
+        "minMembershipGrade": "AS03"
+      },
+      "confirmConfig": {
+        "confirmType": "IMMEDIATE"  // IMMEDIATE, ADMIN_APPROVAL, LOTTERY
+      },
+      "openStartAt": "2025-05-01T00:00:00.000Z",  // nullable
+      "openEndAt": "2025-05-31T23:59:59.000Z",  // nullable
+      "operatingStartAt": "2025-06-01T00:00:00.000Z",  // nullable
+      "operatingEndAt": "2025-12-31T23:59:59.000Z",  // nullable
+      "host": {
+        "id": "770e8400-e29b-41d4-a716-446655440000",
+        "name": "SKS 레스토랑 강남점"
+      },
+      "space": {  // nullable
+        "id": "880e8400-e29b-41d4-a716-446655440000",
+        "name": "메인 홀"
+      }
+    }
+  ],
+  "page": 1,
+  "pageSize": 10,
+  "pageCount": 1,
+  "totalCount": 5
 }
 ```
 
@@ -376,43 +596,60 @@ enum ReservationHostKind {
 **요청 파라미터**:
 ```typescript
 {
-  id: string          // [필수] 컨텐츠 ID
+  id: string          // [필수] 컨텐츠 ID (UUID)
 }
 ```
 
 **응답**:
 ```json
 {
-  "id": "content-uuid",
-  "name": "뮤지컬 '마틸다'",
-  "description": "토니상 수상작",
-  "images": ["url1", "url2"],
-  "host": {
-    "id": "host-uuid",
-    "name": "LG 아트센터"
+  "id": "660e8400-e29b-41d4-a716-446655440000",
+  "name": "런치 코스 A",
+  "description": "전채, 메인, 디저트로 구성된 프리미엄 3코스 런치",
+  "images": [
+    "https://example.com/lunch-course-a-1.jpg",
+    "https://example.com/lunch-course-a-2.jpg"
+  ],
+  "instructions": "예약 시간 10분 전까지 도착 부탁드립니다",  // nullable
+  "contactInfo": {  // nullable
+    "phoneNumbers": [
+      {
+        "type": "MAIN",
+        "number": "+8221234567",
+        "description": "예약 문의"
+      }
+    ]
   },
-  "space": {
-    "id": "space-uuid",
-    "name": "메인홀"
+  "restrictionConfig": {  // nullable
+    "minMembershipGrade": "AS03"
+  },
+  "confirmConfig": {
+    "confirmType": "IMMEDIATE"  // IMMEDIATE, ADMIN_APPROVAL, LOTTERY
+  },
+  "openStartAt": "2025-05-01T00:00:00.000Z",  // nullable
+  "openEndAt": "2025-05-31T23:59:59.000Z",  // nullable
+  "operatingStartAt": "2025-06-01T00:00:00.000Z",  // nullable
+  "operatingEndAt": "2025-12-31T23:59:59.000Z",  // nullable
+  "host": {
+    "id": "770e8400-e29b-41d4-a716-446655440000",
+    "name": "SKS 레스토랑 강남점"
+  },
+  "space": {  // nullable
+    "id": "880e8400-e29b-41d4-a716-446655440000",
+    "name": "메인 홀"
   },
   "terms": [
     {
-      "id": "terms-uuid",
-      "title": "예약 약관",
-      "content": "약관 내용",
-      "isRequired": true,
-      "index": 1
+      "id": "cc0e8400-e29b-41d4-a716-446655440000",
+      "sn": "TERM001",
+      "name": "예약 및 취소 약관",
+      "rev": 1,
+      "content": "예약 취소는 이용 24시간 전까지 무료로 가능합니다. 이후 취소 시 위약금이 발생할 수 있습니다.",  // nullable
+      "link": "https://example.com/terms/reservation",  // nullable
+      "isMandatory": true,
+      "index": "00001"
     }
-  ],
-  "confirmConfig": {
-    "confirmType": "LOTTERY",
-    "lotteryDate": "2025-05-15",
-    "lotteryCapacity": 30
-  },
-  "instructions": "관람 안내",
-  "contactInfo": {
-    "phoneNumber": "02-2005-0114"
-  }
+  ]
 }
 ```
 
@@ -422,16 +659,16 @@ enum ReservationHostKind {
 
 예약 타임슬롯 목록을 조회합니다.
 
-**인증**: 불필요
+**인증**: 필수 (memberProtectedProcedure)
 
 **요청 파라미터**:
 ```typescript
 {
-  contentId: string         // [필수] 컨텐츠 ID
-  startsAfter?: Date       // 시작일 이후 필터
-  startsBefore?: Date      // 시작일 이전 필터
-  page?: number            // 페이지 번호
-  pageSize?: number        // 페이지 크기
+  contentId: string         // [필수] 컨텐츠 ID (UUID)
+  startsAfter?: Date       // [선택] 시작일 이후 필터 (ISO 8601)
+  startsBefore?: Date      // [선택] 시작일 이전 필터 (ISO 8601)
+  page?: number            // [선택] 페이지 번호 (기본값: 1)
+  pageSize?: number        // [선택] 페이지 크기 (기본값: 500, 최대: 500)
 }
 ```
 
@@ -440,39 +677,72 @@ enum ReservationHostKind {
 {
   "list": [
     {
-      "id": "timeslot-uuid",
-      "contentId": "content-uuid",
-      "startAt": "2025-06-01T14:00:00Z",
-      "endAt": "2025-06-01T16:00:00Z",
-      "totalCapacity": 100,
-      "availableCapacity": 75,
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "startAt": "2025-06-01T12:00:00.000Z",
+      "endAt": "2025-06-01T14:00:00.000Z",
+      "totalCapacity": 40,
+      "minGroupSize": 2,
+      "maxGroupSize": 6,
+      "visitIntervalMinutes": 30,  // nullable
+      "openConfig": {
+        "openType": "GRADED",
+        "openStartAtByGrade": {  // optional
+          "AS00": "2025-04-01T10:00:00.000Z",
+          "AS01": "2025-04-15T10:00:00.000Z",
+          "AS02": "2025-05-01T10:00:00.000Z",
+          "AS03": "2025-05-10T10:00:00.000Z",
+          "AS04": "2025-05-15T10:00:00.000Z",
+          "AS05": "2025-05-20T10:00:00.000Z"
+        },
+        "modificationByDays": 1,  // optional
+        "reservationByDays": 7,  // optional
+        "modificationByHours": 24  // optional
+      },
+      "availableCapacity": 32,
+      "availableSections": [  // optional
+        {
+          "name": "메인 홀 A구역",
+          "maxCapacity": 20
+        },
+        {
+          "name": "프라이빗 룸",
+          "maxCapacity": 8
+        }
+      ],
       "isOpenForReservation": true,
-      "openStartAt": "2025-05-01T12:00:00Z",
-      "openEndAt": "2025-05-31T23:59:59Z"
+      "openStartAt": "2025-05-10T10:00:00.000Z",
+      "openEndAt": "2025-05-31T23:59:59.000Z"
     }
   ],
   "page": 1,
-  "pageSize": 20,
-  "pageCount": 5,
-  "totalCount": 100
+  "pageSize": 500,
+  "pageCount": 1,
+  "totalCount": 30
 }
 ```
 
+**필드 설명**:
+- `availableCapacity`: 전체 예약 가능 인원 (totalCapacity - 예약된 인원)
+- `availableSections`: 예약 가능한 섹션과 각 섹션의 최대 수용 인원 (선택적, 섹션/유닛이 있는 경우만)
+- `isOpenForReservation`: 회원 등급 기준 현재 예약 가능 여부
+- `openStartAt`: 현재 회원 등급 기준 예약 오픈 시간
+- `openEndAt`: 예약 마감 시간
+
 ### 가격 항목 조회
 
-#### POST /external/app/reservation/price-items
+#### GET /external/app/reservation/price-items
 
 예약 가격 항목 목록을 조회합니다.
 
 **인증**: 불필요 (publicProcedure)
 
-**요청 바디**:
-```json
+**요청 파라미터**:
+```typescript
 {
-  "contentId": "content-uuid",
-  "kind": "MENU",
-  "page": 1,
-  "pageSize": 10
+  contentId: string         // [필수] 컨텐츠 ID (UUID)
+  kind?: 'MENU' | 'OPTION'  // [선택] 가격 항목 종류 필터
+  page?: number            // [선택] 페이지 번호 (기본값: 1)
+  pageSize?: number        // [선택] 페이지 크기 (기본값: 10, 최대: 500)
 }
 ```
 
@@ -481,21 +751,34 @@ enum ReservationHostKind {
 {
   "list": [
     {
-      "id": "price-item-uuid",
+      "id": "550e8400-e29b-41d4-a716-446655440000",
       "kind": "MENU",
-      "name": "런치 코스",
-      "description": "2코스 메뉴",
-      "basePrice": 50000,
-      "priceType": "FIXED",
+      "name": "런치 코스 A",
+      "description": "전채+메인+디저트",  // nullable
+      "basePrice": 35000,
+      "priceType": "PER_PERSON",  // PER_PERSON, PER_GROUP
       "minQuantity": 1,
-      "maxQuantity": 10,
-      "images": ["https://..."]
+      "maxQuantity": 0,  // 0이면 무제한
+      "images": [
+        "https://example.com/images/lunch-a.jpg"
+      ]
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440000",
+      "kind": "OPTION",
+      "name": "와인 페어링",
+      "description": "코스별 와인 3잔",  // nullable
+      "basePrice": 25000,
+      "priceType": "PER_PERSON",
+      "minQuantity": 1,
+      "maxQuantity": 0,
+      "images": []
     }
   ],
   "page": 1,
   "pageSize": 10,
   "pageCount": 1,
-  "totalCount": 1
+  "totalCount": 2
 }
 ```
 
@@ -510,15 +793,15 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "timeSlotId": "timeslot-uuid",
-  "contentId": "content-uuid",
-  "hostId": "host-uuid",
-  "statusIn": ["PENDING", "CONFIRMED"],
-  "startsAfter": "2025-06-01",
-  "startsBefore": "2025-06-30",
-  "isCheckableOnly": false,
-  "page": 1,
-  "pageSize": 20
+  "timeSlotId": "550e8400-e29b-41d4-a716-446655440000",  // [선택] 타임슬롯 ID 필터
+  "contentId": "660e8400-e29b-41d4-a716-446655440000",  // [선택] 컨텐츠 ID 필터
+  "hostId": "770e8400-e29b-41d4-a716-446655440000",  // [선택] 호스트 ID 필터
+  "statusIn": ["PENDING", "CONFIRMED"],  // [선택] 상태 필터
+  "startsAfter": "2025-06-01T00:00:00.000Z",  // [선택] 시작일 이후
+  "startsBefore": "2025-06-30T23:59:59.000Z",  // [선택] 시작일 이전
+  "isCheckableOnly": false,  // [선택] 체크인 가능 예약만 (기본값: false)
+  "page": 1,  // [선택] 페이지 번호 (기본값: 1)
+  "pageSize": 10  // [선택] 페이지 크기 (기본값: 10, 최대: 500)
 }
 ```
 
@@ -527,51 +810,68 @@ enum ReservationHostKind {
 {
   "list": [
     {
-      "id": "reservation-uuid",
-      "sn": "LGR-123abc456def789g",
-      "status": "CONFIRMED",
-      "groupSize": 2,
+      "id": "990e8400-e29b-41d4-a716-446655440000",
+      "sn": "LGR20250615001",
+      "status": "CONFIRMED",  // PENDING, CONFIRMED, USED, CANCELLED, NOSHOW
+      "groupSize": 4,
       "phoneNumber": "+821012345678",
-      "gradeAtIssue": "AS03",
+      "requestNote": "창가 자리 요청",  // nullable
+      "additionalInfo": {  // nullable
+        "visitTime": "19:30",
+        "vehicleNumber": "123-가-1234",
+        "needsShowroomTour": false,
+        "needsProductConsultation": true
+      },
+      "createdAt": "2025-05-15T10:00:00.000Z",
+      "updatedAt": "2025-05-15T10:00:00.000Z",
       "timeSlot": {
-        "id": "timeslot-uuid",
-        "startAt": "2025-06-01T14:00:00Z",
-        "endAt": "2025-06-01T16:00:00Z",
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "startAt": "2025-06-01T12:00:00.000Z",
+        "endAt": "2025-06-01T14:00:00.000Z",
         "content": {
-          "id": "content-uuid",
-          "name": "뮤지컬 '마틸다'",
-          "images": ["url1"],
-          "confirmConfig": {...},
+          "id": "660e8400-e29b-41d4-a716-446655440000",
+          "name": "런치 코스 A",
+          "images": [
+            "https://example.com/lunch-a-1.jpg",
+            "https://example.com/lunch-a-2.jpg"
+          ],
+          "confirmConfig": {
+            "confirmType": "IMMEDIATE"
+          },
           "host": {
-            "id": "host-uuid",
-            "kind": "ART_CENTER",
-            "name": "LG 아트센터"
+            "id": "770e8400-e29b-41d4-a716-446655440000",
+            "kind": "RESTAURANT",
+            "name": "SKS 레스토랑 강남점"
+          },
+          "space": {  // nullable
+            "id": "880e8400-e29b-41d4-a716-446655440000",
+            "name": "메인 홀"
           }
         }
       },
-      "space": {
-        "id": "space-uuid",
-        "name": "메인홀"
+      "section": {  // nullable
+        "id": "aa0e8400-e29b-41d4-a716-446655440000",
+        "name": "메인 홀 A구역"
       },
-      "unit": {
-        "id": "unit-uuid",
-        "code": "MAIN-A",
-        "name": "A구역",
-        "minCapacity": 1,
+      "unit": {  // nullable
+        "id": "bb0e8400-e29b-41d4-a716-446655440000",
+        "code": "T-05",
+        "name": "테이블 5번",
+        "minCapacity": 2,
         "maxCapacity": 4
       },
       "hists": [
         {
-          "id": "hist-uuid",
+          "id": 1,  // number, not uuid
           "status": "CONFIRMED",
           "reasonCode": "USER_CREATE_CONFIRMED",
-          "createdAt": "2025-05-15T10:00:00Z"
+          "createdAt": "2025-05-15T10:00:00.000Z"
         }
       ]
     }
   ],
   "page": 1,
-  "pageSize": 20,
+  "pageSize": 10,
   "pageCount": 1,
   "totalCount": 2
 }
@@ -588,53 +888,95 @@ enum ReservationHostKind {
 **요청 파라미터**:
 ```typescript
 {
-  id: string          // [필수] 예약 ID
+  id: string          // [필수] 예약 ID (UUID)
 }
 ```
 
 **응답**:
 ```json
 {
-  "id": "reservation-uuid",
-  "sn": "LGR-123abc456def789g",
+  "id": "990e8400-e29b-41d4-a716-446655440000",
+  "sn": "LGR20250615001",
   "status": "CONFIRMED",
-  "groupSize": 2,
+  "groupSize": 4,
   "phoneNumber": "+821012345678",
   "gradeAtIssue": "AS03",
-  "canModify": true,
+  "requestNote": "창가 자리 요청",  // nullable
+  "additionalInfo": {  // nullable
+    "visitTime": "19:30",
+    "vehicleNumber": "123-가-1234",
+    "needsShowroomTour": false,
+    "needsProductConsultation": true
+  },
+  "createdAt": "2025-05-15T10:00:00.000Z",
+  "updatedAt": "2025-05-15T10:00:00.000Z",
   "timeSlot": {
-    "id": "timeslot-uuid",
-    "startAt": "2025-06-01T14:00:00Z",
-    "endAt": "2025-06-01T16:00:00Z",
-    "openConfig": {...},
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "startAt": "2025-06-01T12:00:00.000Z",
+    "endAt": "2025-06-01T14:00:00.000Z",
+    "openConfig": {
+      "openType": "GRADED",
+      "modificationByDays": 1
+    },
     "content": {
-      "id": "content-uuid",
-      "name": "뮤지컬 '마틸다'",
-      "images": ["url1", "url2"],
-      "instructions": "관람 안내",
-      "contactInfo": {...},
-      "confirmConfig": {...},
+      "id": "660e8400-e29b-41d4-a716-446655440000",
+      "name": "런치 코스 A",
+      "images": [
+        "https://example.com/lunch-a-1.jpg",
+        "https://example.com/lunch-a-2.jpg"
+      ],
+      "instructions": "예약 시간 10분 전까지 도착 부탁드립니다",  // nullable
+      "contactInfo": {  // nullable
+        "phoneNumbers": [
+          {
+            "type": "MAIN",
+            "number": "+8221234567",
+            "description": "예약 문의"
+          }
+        ]
+      },
+      "confirmConfig": {
+        "confirmType": "IMMEDIATE"
+      },
       "host": {
-        "id": "host-uuid",
-        "kind": "ART_CENTER",
-        "name": "LG 아트센터",
-        "address": {...},
-        "phoneNumber": "02-2005-0114"
+        "id": "770e8400-e29b-41d4-a716-446655440000",
+        "kind": "RESTAURANT",
+        "name": "SKS 레스토랑 강남점",
+        "address": {
+          "zipCode": "06159",
+          "mainAddress": "서울시 강남구 테헤란로 123",
+          "detailAddress": "SKS빌딩 1층"
+        },
+        "phoneNumber": "02-1234-5678"  // nullable
+      },
+      "space": {  // nullable
+        "id": "880e8400-e29b-41d4-a716-446655440000",
+        "name": "메인 홀"
       }
     }
   },
-  "section": {
-    "id": "section-uuid",
-    "name": "1층 홀"
+  "section": {  // nullable
+    "id": "aa0e8400-e29b-41d4-a716-446655440000",
+    "name": "메인 홀 A구역"
   },
-  "unit": {
-    "id": "unit-uuid",
-    "code": "MAIN-A",
-    "name": "A구역",
-    "minCapacity": 1,
+  "unit": {  // nullable
+    "id": "bb0e8400-e29b-41d4-a716-446655440000",
+    "code": "T-05",
+    "name": "테이블 5번",
+    "minCapacity": 2,
     "maxCapacity": 4
   },
-  "hists": [...]
+  "hists": [
+    {
+      "id": 1,  // number, not uuid
+      "status": "CONFIRMED",
+      "reasonCode": "USER_CREATE_CONFIRMED",
+      "changes": {},  // nullable
+      "note": "예약 확정",  // nullable
+      "createdAt": "2025-05-15T10:00:00.000Z"
+    }
+  ],
+  "canModify": true
 }
 ```
 
@@ -646,15 +988,30 @@ enum ReservationHostKind {
 
 **인증**: 필요 (memberProtectedProcedure)
 
+<Note>
+**GRADED 오픈 타입 동작 방식:**
+- 회원 등급에 따라 예약 오픈 시간이 다르게 적용됩니다
+- 예약 생성 시 자동으로 회원 등급을 조회하여 해당 등급의 오픈 시간을 적용합니다
+</Note>
+
 **요청 바디**:
 ```json
 {
-  "timeSlotId": "timeslot-uuid",
-  "groupSize": 2,
-  "phoneNumber": "+821012345678",
-  "termsAgreements": [
+  "timeSlotId": "550e8400-e29b-41d4-a716-446655440000",  // [필수] 타임슬롯 ID
+  "groupSize": 2,  // [필수] 예약 인원
+  "phoneNumber": "+821012345678",  // [필수] 연락처
+  "requestNote": "창가 자리 요청",  // [선택] 요청사항 (최대 500자)
+  "additionalInfo": {  // [선택] 추가 정보
+    "visitTime": "19:30",
+    "vehicleNumber": "123-가-1234",
+    "needsShowroomTour": true,
+    "needsProductConsultation": false
+  },
+  "sectionId": "aa0e8400-e29b-41d4-a716-446655440000",  // [선택] 섹션 ID (구역 예약시)
+  "unitId": "bb0e8400-e29b-41d4-a716-446655440000",  // [선택] 유닛 ID (지정석 예약시)
+  "termsAgreements": [  // [필수] 약관 동의
     {
-      "termsId": "terms-uuid",
+      "termsId": "cc0e8400-e29b-41d4-a716-446655440000",
       "isAgreed": true
     }
   ]
@@ -664,8 +1021,8 @@ enum ReservationHostKind {
 **응답**:
 ```json
 {
-  "id": "reservation-uuid",
-  "sn": "LGR-123abc456def789g"
+  "id": "dd0e8400-e29b-41d4-a716-446655440000",
+  "sn": "LGR20250615002"
 }
 ```
 
@@ -677,14 +1034,29 @@ enum ReservationHostKind {
 
 **인증**: 필요 (memberProtectedProcedure)
 
+<Note>
+**GRADED 오픈 타입 동작 방식:**
+- 타임슬롯 변경 시 회원 등급에 따른 오픈 시간이 적용됩니다
+- 예약 수정 시 자동으로 회원 등급을 조회하여 해당 등급의 오픈 시간을 적용합니다
+</Note>
+
 **요청 바디**:
 ```json
 {
-  "id": "reservation-uuid",
-  "timeSlotId": "new-timeslot-uuid",
-  "groupSize": 3,
-  "phoneNumber": "+821087654321",
-  "note": "변경 사유"
+  "id": "990e8400-e29b-41d4-a716-446655440000",  // [필수] 예약 ID
+  "timeSlotId": "cc0e8400-e29b-41d4-a716-446655440000",  // [선택] 새 타임슬롯 ID
+  "groupSize": 3,  // [선택] 새 예약 인원
+  "phoneNumber": "+821087654321",  // [선택] 새 연락처
+  "requestNote": "인원 변경 요청",  // [선택] 요청사항
+  "additionalInfo": {  // [선택] 추가 정보
+    "visitTime": "20:00",
+    "vehicleNumber": "234-나-5678",
+    "needsShowroomTour": true,
+    "needsProductConsultation": false
+  },
+  "sectionId": "aa0e8400-e29b-41d4-a716-446655440000",  // [선택] 새 섹션 ID
+  "unitId": "dd0e8400-e29b-41d4-a716-446655440000",  // [선택] 새 유닛 ID
+  "note": "일행 1명이 추가로 참석합니다"  // [선택] 수정 사유 노트 (최대 500자)
 }
 ```
 
@@ -701,8 +1073,8 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "id": "reservation-uuid",
-  "note": "취소 사유"
+  "id": "990e8400-e29b-41d4-a716-446655440000",  // [필수] 예약 ID
+  "note": "일정 변경으로 인한 취소"  // [선택] 취소 사유 (최대 500자)
 }
 ```
 
@@ -719,8 +1091,8 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "id": "reservation-uuid",
-  "note": "체크인 메모 (선택사항)"
+  "id": "990e8400-e29b-41d4-a716-446655440000",  // [필수] 예약 ID
+  "note": "정시 도착"  // [선택] 체크인 메모 (최대 500자)
 }
 ```
 
@@ -744,33 +1116,79 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "id": "reservation-uuid",
-  "note": "체크인 메모"
+  "kind": "RESTAURANT",  // [선택] RESTAURANT, ART_CENTER
+  "operatingStatusIn": ["UPCOMING", "ONGOING", "COMPLETED"],  // [선택]
+  "displayStatusIn": ["UPCOMING", "ONGOING", "COMPLETED"],  // [선택]
+  "isActive": true,  // [선택] 기본값: true
+  "orderBy": "createdAt_desc",  // [선택] 기본값: createdAt_desc
+  "page": 1,  // [선택] 기본값: 1
+  "pageSize": 20  // [선택] 기본값: 20, 최대: 500
 }
 ```
 
-**응답**: 없음 (200 OK)
-
-## Admin API (관리자용)
-
-### 예약 호스트 관리
-
-#### POST /external/admin/reservation/hosts
-
-예약 호스트 목록을 조회합니다.
-
-**인증**: 필요 (adminProtectedProcedure)
-
-**요청 바디**:
+**응답**:
 ```json
 {
-  "kind": "ART_CENTER",
-  "operatingStatusIn": ["UPCOMING", "IN_PROGRESS"],
-  "displayStatusIn": ["UPCOMING", "IN_PROGRESS"],
-  "isActive": true,
-  "orderBy": "createdAt_desc",
+  "list": [
+    {
+      "id": "770e8400-e29b-41d4-a716-446655440000",
+      "kind": "RESTAURANT",
+      "name": "SKS 레스토랑 강남점",
+      "address": {
+        "zipCode": "06159",
+        "mainAddress": "서울시 강남구 테헤란로 123",
+        "detailAddress": "SKS빌딩 1층"
+      },
+      "phoneNumber": "02-1234-5678",  // nullable
+      "operatingStartAt": "2025-01-01T00:00:00.000Z",  // nullable
+      "operatingEndAt": "2025-12-31T23:59:59.000Z",  // nullable
+      "operatingHours": [  // JSON 배열
+        {
+          "days": ["MON", "TUE", "WED", "THU", "FRI"],
+          "hours": [
+            {"openTime": "11:30", "closeTime": "14:30"},
+            {"openTime": "17:30", "closeTime": "22:00"}
+          ]
+        }
+      ],
+      "holidays": {  // nullable
+        "regular": {
+          "weekly": ["SUN"],
+          "monthly": [],
+          "yearly": [
+            {"month": 1, "day": 1},
+            {"month": 12, "day": 25}
+          ]
+        },
+        "specific": ["2025-02-08", "2025-02-09"]
+      },
+      "description": "프리미엄 다이닝 레스토랑",
+      "images": [
+        "https://example.com/restaurant/gangnam-1.jpg",
+        "https://example.com/restaurant/gangnam-2.jpg"
+      ],
+      "instructions": "예약 시간 10분 전까지 도착 부탁드립니다",  // nullable
+      "displayStartAt": "2025-01-01T00:00:00.000Z",  // nullable
+      "displayEndAt": "2025-12-31T23:59:59.000Z",  // nullable
+      "isActive": true,
+      "createdAt": "2024-12-01T00:00:00.000Z",
+      "updatedAt": "2025-01-15T10:00:00.000Z",
+      "spaces": [
+        {
+          "id": "880e8400-e29b-41d4-a716-446655440000",
+          "name": "메인 홀"
+        },
+        {
+          "id": "990e8400-e29b-41d4-a716-446655440000",
+          "name": "프라이빗 룸"
+        }
+      ]
+    }
+  ],
   "page": 1,
-  "pageSize": 20
+  "pageSize": 20,
+  "pageCount": 1,
+  "totalCount": 3
 }
 ```
 
@@ -783,25 +1201,36 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "kind": "ART_CENTER",
-  "name": "LG 아트센터",
-  "address": {
-    "zipCode": "06159",
-    "mainAddress": "서울시 강남구",
-    "detailAddress": "LG아트센터"
+  "kind": "RESTAURANT",  // [필수] RESTAURANT, ART_CENTER
+  "name": "SKS 레스토랑 판교점",  // [필수] 최대 35자
+  "address": {  // [필수]
+    "zipCode": "06159",  // [필수]
+    "mainAddress": "서울시 서초구 판교대로 100",  // [필수]
+    "detailAddress": "SKS빌딩 2층"  // [선택]
   },
-  "operatingHours": [...],
-  "description": "설명",
-  "images": ["url1", "url2"],
-  "phoneNumber": "02-2005-0114",
-  "operatingStartAt": "2025-01-01",
-  "operatingEndAt": "2025-12-31",
-  "holidays": {...},
-  "instructions": "이용 안내",
-  "displayStartAt": "2025-01-01",
-  "displayEndAt": "2025-12-31"
+  "phoneNumber": "02-2005-0114",  // [선택]
+  "operatingStartAt": "2025-01-01T00:00:00.000Z",  // [선택]
+  "operatingEndAt": "2025-12-31T23:59:59.000Z",  // [선택]
+  "operatingHours": [  // [필수] 최소 1개
+    {
+      "days": ["MON", "TUE", "WED", "THU", "FRI"],
+      "hours": [{"openTime": "11:30", "closeTime": "22:00"}]
+    }
+  ],
+  "holidays": {  // [필수]
+    "fixedHolidays": ["01-01", "12-25"],
+    "temporaryHolidays": ["2025-02-08"]
+  },
+  "description": "프리미엄 레스토랑",  // [필수] 최대 500자
+  "images": ["https://example.com/rest1.jpg", "https://example.com/rest2.jpg"],  // [필수] 최소 1개
+  "instructions": "예약 3일 전 취소 가능",  // [선택] 최대 2000자
+  "displayStartAt": "2025-01-01T00:00:00.000Z",  // [선택]
+  "displayEndAt": "2025-12-31T23:59:59.000Z",  // [선택]
+  "isActive": true  // [선택] 기본값: true
 }
 ```
+
+**응답**: 없음 (200 OK)
 
 #### POST /external/admin/reservation/host/update
 
@@ -809,19 +1238,98 @@ enum ReservationHostKind {
 
 **인증**: 필요 (adminProtectedProcedure)
 
+**요청 바디**:
+```json
+{
+  "id": "770e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "kind": "RESTAURANT",  // [선택]
+  "name": "LG 아트센터 서울",  // [선택] 최대 35자
+  "address": {  // [선택]
+    "zipCode": "06159",
+    "mainAddress": "서울시 강남구 강남대로 100",
+    "detailAddress": "LG빌딩 1층"
+  },
+  "phoneNumber": "02-2005-0115",  // [선택]
+  "operatingStartAt": "2025-01-01T00:00:00.000Z",  // [선택]
+  "operatingEndAt": "2025-12-31T23:59:59.000Z",  // [선택]
+  "operatingHours": [  // [선택]
+    {
+      "days": ["MON", "TUE", "WED", "THU", "FRI", "SAT"],
+      "hours": [{"openTime": "10:00", "closeTime": "20:00"}]
+    }
+  ],
+  "holidays": {  // [선택]
+    "fixedHolidays": ["01-01", "12-25"],
+    "temporaryHolidays": ["2025-02-09", "2025-02-10"]
+  },
+  "description": "업데이트된 설명",  // [선택] 최대 500자
+  "images": ["https://example.com/img1.jpg", "https://example.com/img2.jpg"],  // [선택]
+  "instructions": "업데이트된 이용 안내",  // [선택] 최대 2000자
+  "displayStartAt": "2025-01-01T00:00:00.000Z",  // [선택]
+  "displayEndAt": "2025-12-31T23:59:59.000Z",  // [선택]
+  "isActive": true  // [선택]
+}
+```
+
+**응답**: 없음 (200 OK)
+
 #### POST /external/admin/reservation/host/delete
 
 예약 호스트를 삭제합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
 
+**요청 바디**:
+```json
+{
+  "id": "770e8400-e29b-41d4-a716-446655440000"  // [필수]
+}
+```
+
+**응답**: 없음 (200 OK)
+
 ### 예약 스페이스 관리
 
-#### POST /external/admin/reservation/spaces
+#### GET /external/admin/reservation/spaces
 
 예약 스페이스 목록을 조회합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
+
+**요청 파라미터**:
+```typescript
+{
+  hostId?: string       // [선택] 호스트 ID 필터 (UUID)
+  isActive?: boolean    // [선택] 활성 상태 필터 (기본값: true)
+  orderBy?: string      // [선택] 정렬 기준 (기본값: "createdAt_desc")
+  page?: number         // [선택] 페이지 번호 (기본값: 1)
+  pageSize?: number     // [선택] 페이지 크기 (기본값: 20, 최대: 500)
+}
+```
+
+**응답**:
+```json
+{
+  "list": [
+    {
+      "id": "880e8400-e29b-41d4-a716-446655440000",
+      "name": "메인 홀",
+      "description": "최대 100명 수용 가능한 메인 다이닝 공간",
+      "isActive": true,
+      "createdAt": "2024-12-01T00:00:00.000Z",
+      "updatedAt": "2025-01-15T10:00:00.000Z",
+      "host": {
+        "id": "770e8400-e29b-41d4-a716-446655440000",
+        "name": "SKS 레스토랑 강남점"
+      }
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "pageCount": 1,
+  "totalCount": 2
+}
+```
 
 #### POST /external/admin/reservation/space/create
 
@@ -829,11 +1337,36 @@ enum ReservationHostKind {
 
 **인증**: 필요 (adminProtectedProcedure)
 
+**요청 바디**:
+```json
+{
+  "hostId": "770e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "name": "프라이빗 룸",  // [필수] 최대 35자
+  "description": "소규모 모임을 위한 독립된 공간 (4-8명)",  // [필수] 최대 500자
+  "isActive": true  // [선택] 기본값: true
+}
+```
+
+**응답**: 없음 (200 OK)
+
 #### POST /external/admin/reservation/space/update
 
 예약 스페이스를 수정합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "id": "880e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "hostId": "770e8400-e29b-41d4-a716-446655440000",  // [선택]
+  "name": "소극장 A",  // [선택] 최대 35자
+  "description": "업데이트된 설명",  // [선택] 최대 500자
+  "isActive": true  // [선택]
+}
+```
+
+**응답**: 없음 (200 OK)
 
 #### POST /external/admin/reservation/space/delete
 
@@ -841,22 +1374,60 @@ enum ReservationHostKind {
 
 **인증**: 필요 (adminProtectedProcedure)
 
+**요청 바디**:
+```json
+{
+  "id": "880e8400-e29b-41d4-a716-446655440000"  // [필수]
+}
+```
+
+**응답**: 없음 (200 OK)
+
 ### 예약 섹션 관리
 
-#### POST /external/admin/reservation/sections
+#### GET /external/admin/reservation/sections
 
 예약 섹션(실제 예약 관리 단위) 목록을 조회합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
 
-**요청 바디**:
+**요청 파라미터**:
+- `hostId`: [선택] 호스트 ID (UUID)
+- `isActive`: [선택] 활성 상태 (기본값: true)
+- `orderBy`: [선택] 정렬 방식 (기본값: createdAt_desc)
+- `page`: [선택] 페이지 번호 (기본값: 1)
+- `pageSize`: [선택] 페이지 크기 (기본값: 20, 최대: 500)
+
+**응답**:
 ```json
 {
-  "hostId": "host-uuid",
-  "isActive": true,
-  "orderBy": "createdAt_desc",
+  "list": [
+    {
+      "id": "aa0e8400-e29b-41d4-a716-446655440000",
+      "name": "메인 홀",
+      "description": "레스토랑 메인 홀 섹션",
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z",
+      "host": {
+        "id": "770e8400-e29b-41d4-a716-446655440000",
+        "name": "SKS 레스토랑 강남점"
+      },
+      "units": [
+        {
+          "id": "bb0e8400-e29b-41d4-a716-446655440000",
+          "code": "T01",
+          "name": "테이블 1",
+          "minCapacity": 2,
+          "maxCapacity": 4
+        }
+      ]
+    }
+  ],
   "page": 1,
-  "pageSize": 20
+  "pageSize": 20,
+  "pageCount": 1,
+  "totalCount": 3
 }
 ```
 
@@ -869,12 +1440,14 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "hostId": "host-uuid",
-  "name": "1층 홀",
-  "description": "LG 아트센터 1층 메인 홀",
-  "isActive": true
+  "hostId": "770e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "name": "메인 홀",  // [필수] 최대 35자
+  "description": "레스토랑 메인 홀",  // [필수] 최대 500자
+  "isActive": true  // [선택] 기본값: true
 }
 ```
+
+**응답**: 없음 (200 OK)
 
 #### POST /external/admin/reservation/section/update
 
@@ -885,42 +1458,76 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "id": "section-uuid",
-  "name": "2층 홀",
-  "description": "업데이트된 설명",
-  "isActive": false
+  "id": "aa0e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "hostId": "770e8400-e29b-41d4-a716-446655440000",  // [선택]
+  "name": "프라이빗 룸",  // [선택] 최대 35자
+  "description": "업데이트된 설명",  // [선택] 최대 500자
+  "isActive": false  // [선택]
 }
 ```
 
+**응답**: 없음 (200 OK)
+
 #### POST /external/admin/reservation/section/delete
 
-예약 섉션을 삭제합니다. 섉션에 유닛이 있으면 삭제가 불가능합니다.
+예약 섹션을 삭제합니다. 섹션에 유닛이 있으면 삭제가 불가능합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
 
 **요청 바디**:
 ```json
 {
-  "id": "section-uuid"
+  "id": "aa0e8400-e29b-41d4-a716-446655440000"  // [필수]
 }
 ```
 
+**응답**: 없음 (200 OK)
+
 ### 예약 유닛 관리
 
-#### POST /external/admin/reservation/units
+#### GET /external/admin/reservation/units
 
 예약 유닛 목록을 조회합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
 
-**요청 바디**:
+**요청 파라미터**:
+- `sectionId`: [선택] 섹션 ID (UUID)
+- `timeSlotId`: [선택] 타임슬롯 ID (UUID) - 특정 시간대의 가용성 확인
+- `isActive`: [선택] 활성 상태 (기본값: true)
+- `orderBy`: [선택] 정렬 방식 (기본값: index_asc)
+- `page`: [선택] 페이지 번호 (기본값: 1)
+- `pageSize`: [선택] 페이지 크기 (기본값: 20, 최대: 500)
+- `shouldMask`: [선택] 마스킹 여부 (기본값: true)
+
+**응답**:
 ```json
 {
-  "sectionId": "section-uuid",
-  "isActive": true,
-  "orderBy": "index_asc",
+  "list": [
+    {
+      "id": "unit-uuid",
+      "code": "TABLE-01",
+      "name": "테이블 1",
+      "description": "메인 홀 테이블 1",
+      "minCapacity": 1,
+      "maxCapacity": 4,
+      "metadata": null,
+      "index": "a0000001",
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z",
+      "section": {
+        "id": "section-uuid",
+        "name": "메인 홀"
+      },
+      "isAvailable": true,  // [선택] timeSlotId가 제공된 경우에만
+      "reservation": null  // [선택] timeSlotId가 제공된 경우에만, 예약 정보
+    }
+  ],
   "page": 1,
-  "pageSize": 20
+  "pageSize": 20,
+  "pageCount": 1,
+  "totalCount": 5
 }
 ```
 
@@ -933,14 +1540,18 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "sectionId": "section-uuid",
-  "code": "MAIN-A",
-  "name": "A구역",
-  "description": "1층 홀 A구역",
-  "minCapacity": 1,
-  "maxCapacity": 4
+  "sectionId": "aa0e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "code": "TABLE-02",  // [필수] 최대 20자
+  "name": "테이블 2",  // [필수] 최대 35자
+  "description": "메인 홀 테이블 2",  // [필수] 최대 500자
+  "minCapacity": 1,  // [선택] 기본값: 0, 최소: 0
+  "maxCapacity": 4,  // [선택] 기본값: 0, 최소: 0
+  "metadata": { "floor": 1 },  // [선택]
+  "isActive": true  // [선택] 기본값: true
 }
 ```
+
+**응답**: 없음 (200 OK)
 
 #### POST /external/admin/reservation/unit/update
 
@@ -951,14 +1562,19 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "id": "unit-uuid",
-  "name": "B구역",
-  "description": "업데이트된 설명",
-  "minCapacity": 2,
-  "maxCapacity": 6,
-  "idForBefore": null
+  "id": "bb0e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "code": "TABLE-03",  // [선택] 최대 20자
+  "name": "테이블 3",  // [선택] 최대 35자
+  "description": "업데이트된 설명",  // [선택] 최대 500자
+  "minCapacity": 2,  // [선택]
+  "maxCapacity": 6,  // [선택]
+  "metadata": { "floor": 2 },  // [선택]
+  "isActive": false,  // [선택]
+  "idForBefore": "cc0e8400-e29b-41d4-a716-446655440000"  // [선택] 순서 변경용, null이면 마지막
 }
 ```
+
+**응답**: 없음 (200 OK)
 
 #### POST /external/admin/reservation/unit/delete
 
@@ -969,9 +1585,11 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "id": "unit-uuid"
+  "id": "bb0e8400-e29b-41d4-a716-446655440000"  // [필수]
 }
 ```
+
+**응답**: 없음 (200 OK)
 
 ### 예약 컨텐츠 관리
 
@@ -984,22 +1602,119 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "hostId": "host-uuid",
-  "spaceId": "space-uuid",
-  "operatingStatusIn": ["UPCOMING", "IN_PROGRESS"],
-  "displayStatusIn": ["UPCOMING", "IN_PROGRESS"],
-  "isActive": true,
-  "orderBy": "createdAt_desc",
-  "page": 1,
-  "pageSize": 20
+  "hostId": "770e8400-e29b-41d4-a716-446655440000",  // [선택] 호스트 ID 필터
+  "spaceId": "880e8400-e29b-41d4-a716-446655440000",  // [선택] 스페이스 ID 필터
+  "operatingStatusIn": ["UPCOMING", "ONGOING", "COMPLETED"],  // [선택]
+  "displayStatusIn": ["UPCOMING", "ONGOING", "COMPLETED"],  // [선택]
+  "isActive": true,  // [선택] 기본값: true
+  "orderBy": "createdAt_desc",  // [선택] 기본값: createdAt_desc
+  "page": 1,  // [선택] 기본값: 1
+  "pageSize": 20  // [선택] 기본값: 20, 최대: 500
 }
 ```
 
-#### POST /external/admin/reservation/content/get
+**응답**:
+```json
+{
+  "list": [
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440000",
+      "name": "런치 코스",
+      "description": "프리미엄 3코스 런치",
+      "images": ["https://example.com/lunch1.jpg"],
+      "instructions": "예약 3일 전까지 취소 가능",  // nullable
+      "contactInfo": {  // nullable
+        "type": "PHONE",
+        "value": "02-1234-5678"
+      },
+      "restrictionConfig": {  // nullable
+        "minMembershipGrade": "AS03"
+      },
+      "confirmConfig": {
+        "confirmType": "LOTTERY",
+        "lotteryDate": "2025-05-20",
+        "lotteryCapacity": 100
+      },
+      "displayStartAt": "2025-04-01T00:00:00.000Z",  // nullable
+      "displayEndAt": "2025-05-30T23:59:59.000Z",  // nullable
+      "openStartAt": "2025-05-01T00:00:00.000Z",  // nullable
+      "openEndAt": "2025-05-25T23:59:59.000Z",  // nullable
+      "operatingStartAt": "2025-06-01T00:00:00.000Z",  // nullable
+      "operatingEndAt": "2025-06-30T23:59:59.000Z",  // nullable
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z",
+      "host": {
+        "id": "770e8400-e29b-41d4-a716-446655440000",
+        "name": "SKS 레스토랑 강남점"
+      },
+      "space": {  // nullable
+        "id": "880e8400-e29b-41d4-a716-446655440000",
+        "name": "메인 홀"
+      }
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "pageCount": 1,
+  "totalCount": 5
+}
+```
+
+#### GET /external/admin/reservation/content/get
 
 예약 컨텐츠를 상세 조회합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
+
+**요청 파라미터**: (GET 방식)
+- `id`: 컨텐츠 ID (UUID)
+
+**응답**:
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440000",
+  "name": "뮤지컬 '마틸다'",
+  "description": "토니상 수상작",
+  "images": ["https://example.com/matilda1.jpg", "https://example.com/matilda2.jpg"],
+  "instructions": "예약 및 이용 안내",  // nullable
+  "contactInfo": {  // nullable
+    "phoneNumbers": [
+      {
+        "type": "MAIN",
+        "number": "+8225441234",
+        "description": "문의"
+      }
+    ]
+  },
+  "restrictionConfig": {  // nullable
+    "minMembershipGrade": "AS03"
+  },
+  "confirmConfig": {
+    "confirmType": "LOTTERY",
+    "lotteryDate": "2025-05-20",
+    "lotteryCapacity": 200
+  },
+  "displayStartAt": "2025-04-01T00:00:00.000Z",  // nullable
+  "displayEndAt": "2025-05-30T23:59:59.000Z",  // nullable
+  "openStartAt": "2025-05-01T00:00:00.000Z",  // nullable
+  "openEndAt": "2025-05-25T23:59:59.000Z",  // nullable
+  "operatingStartAt": "2025-06-01T00:00:00.000Z",  // nullable
+  "operatingEndAt": "2025-06-30T23:59:59.000Z",  // nullable
+  "isActive": true,
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "host": {
+    "id": "770e8400-e29b-41d4-a716-446655440000",
+    "name": "LG 아트센터"
+  },
+  "space": {  // nullable
+    "id": "880e8400-e29b-41d4-a716-446655440000",
+    "name": "메인홀"
+  },
+  "terms": []
+}
+```
 
 #### POST /external/admin/reservation/content/create
 
@@ -1010,25 +1725,31 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "name": "뮤지컬 '마틸다'",
-  "description": "토니상 수상작",
-  "images": ["url1", "url2"],
-  "confirmConfig": {
-    "confirmType": "LOTTERY",
-    "lotteryDate": "2025-05-15",
-    "lotteryCapacity": 30
+  "name": "디너 코스",  // [필수] 최대 35자
+  "description": "프리미엄 5코스 디너",  // [필수]
+  "images": ["https://example.com/dinner1.jpg", "https://example.com/dinner2.jpg"],  // [필수] 최소 1개
+  "instructions": "예약 및 이용 안내",  // [선택] 최대 2000자
+  "contactInfo": {  // [선택]
+    "type": "PHONE",
+    "value": "02-3456-7890"
   },
-  "hostId": "host-uuid",
-  "spaceId": "space-uuid",
-  "instructions": "관람 안내",
-  "contactInfo": {...},
-  "restrictionConfig": {
+  "restrictionConfig": {  // [선택]
     "minMembershipGrade": "AS03"
   },
-  "displayStartAt": "2025-04-01",
-  "displayEndAt": "2025-05-30"
+  "confirmConfig": {  // [필수]
+    "confirmType": "LOTTERY",
+    "lotteryDate": "2025-05-20",  // LOTTERY인 경우 필수
+    "lotteryCapacity": 50  // LOTTERY인 경우 필수
+  },
+  "displayStartAt": "2025-04-01T00:00:00.000Z",  // [선택]
+  "displayEndAt": "2025-05-30T23:59:59.000Z",  // [선택]
+  "hostId": "770e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "spaceId": "880e8400-e29b-41d4-a716-446655440000",  // [선택]
+  "isActive": true  // [선택] 기본값: true
 }
 ```
+
+**응답**: 없음 (200 OK)
 
 #### POST /external/admin/reservation/content/update
 
@@ -1036,25 +1757,139 @@ enum ReservationHostKind {
 
 **인증**: 필요 (adminProtectedProcedure)
 
+**요청 바디**:
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "name": "런치 코스 (수정)",  // [선택]
+  "description": "업데이트된 메뉴 설명",  // [선택]
+  "images": ["https://example.com/lunch-update.jpg"],  // [선택]
+  "instructions": "업데이트된 이용 안내",  // [선택]
+  "contactInfo": {  // [선택]
+    "type": "EMAIL",
+    "value": "reservation@example.com"
+  },
+  "restrictionConfig": {  // [선택]
+    "minMembershipGrade": "AS04"
+  },
+  "confirmConfig": {  // [선택]
+    "confirmType": "ADMIN_APPROVAL"
+  },
+  "displayStartAt": "2025-04-01T00:00:00.000Z",  // [선택]
+  "displayEndAt": "2025-05-30T23:59:59.000Z",  // [선택]
+  "hostId": "770e8400-e29b-41d4-a716-446655440000",  // [선택]
+  "spaceId": "880e8400-e29b-41d4-a716-446655440000",  // [선택]
+  "isActive": false  // [선택]
+}
+```
+
+**응답**: 없음 (200 OK)
+
 #### POST /external/admin/reservation/content/delete
 
 예약 컨텐츠를 삭제합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
 
+**요청 바디**:
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440000"  // [필수]
+}
+```
+
+**응답**: 없음 (200 OK)
+
 ### 예약 타임슬롯 관리
 
-#### POST /external/admin/reservation/time-slots
+#### POST /external/admin/reservation/timeslots
 
 예약 타임슬롯 목록을 조회합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "contentId": "660e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "startsAfter": "2025-06-01T00:00:00.000Z",  // [선택]
+  "startsBefore": "2025-06-30T23:59:59.000Z",  // [선택]
+  "isActive": true,  // [선택] 기본값: true
+  "orderBy": "startAt_asc",  // [선택] 기본값: startAt_asc
+  "page": 1,  // [선택] 기본값: 1
+  "pageSize": 20  // [선택] 기본값: 20, 최대: 500
+}
+```
+
+**응답**:
+```json
+{
+  "list": [
+    {
+      "id": "990e8400-e29b-41d4-a716-446655440000",
+      "startAt": "2025-06-01T12:00:00.000Z",
+      "endAt": "2025-06-01T14:00:00.000Z",
+      "totalCapacity": 40,
+      "minGroupSize": 1,
+      "maxGroupSize": 4,
+      "visitIntervalMinutes": 30,  // nullable
+      "openConfig": {
+        "openType": "GRADED",
+        "openStartAtByGrade": {
+          "AS00": "2025-04-01T10:00:00.000Z",
+          "AS01": "2025-05-01T10:00:00.000Z",
+          "AS02": "2025-05-01T10:00:00.000Z",
+          "AS03": "2025-05-01T10:00:00.000Z",
+          "AS04": "2025-05-01T10:00:00.000Z",
+          "AS05": "2025-05-01T10:00:00.000Z"
+        }
+      },
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z",
+      "content": {
+        "id": "660e8400-e29b-41d4-a716-446655440000",
+        "name": "런치 코스"
+      },
+      "reservationCount": 5,
+      "availableCapacity": 35
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "pageCount": 1,
+  "totalCount": 10
+}
+```
 
 #### POST /external/admin/reservation/time-slot/create
 
 예약 타임슬롯을 생성합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "contentId": "660e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "startAt": "2025-06-01T18:00:00.000Z",  // [필수]
+  "endAt": "2025-06-01T20:00:00.000Z",  // [필수]
+  "totalCapacity": 40,  // [필수] 최소 1
+  "minGroupSize": 1,  // [필수] 최소 1
+  "maxGroupSize": 4,  // [필수] 최소 1
+  "visitIntervalMinutes": 30,  // [선택] 5~480분
+  "openConfig": {  // [필수]
+    "openType": "BATCH",
+    "openStartAt": "2025-05-01T10:00:00.000Z",
+    "openEndAt": "2025-05-25T23:59:59.000Z",
+    "reservationByHours": 24,  // [선택]
+    "modificationByHours": 3  // [선택]
+  },
+  "isActive": true  // [선택] 기본값: true
+}
+```
+
+**응답**: 없음 (200 OK)
 
 #### POST /external/admin/reservation/time-slot/batch-create
 
@@ -1065,29 +1900,46 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "contentId": "content-uuid",
-  "operatingStartDate": "2025-06-01",
-  "operatingEndDate": "2025-06-30",
-  "minGroupSize": 1,
-  "maxGroupSize": 4,
-  "openConfig": {
-    "openType": "BATCH",
-    "openStartAt": "2025-05-01T12:00:00Z",
-    "openEndAt": "2025-05-31T23:59:59Z"
+  "contentId": "660e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "operatingStartDate": "2025-06-01T00:00:00.000Z",  // [필수]
+  "operatingEndDate": "2025-06-30T23:59:59.000Z",  // [필수]
+  "minGroupSize": 1,  // [필수] 최소 1
+  "maxGroupSize": 4,  // [필수] 최소 1
+  "visitIntervalMinutes": 30,  // [선택] 5~480분
+  "openConfig": {  // [필수]
+    "openType": "GRADED",
+    "modificationByDays": 2,  // [선택]
+    "reservationByDays": 1,  // [선택]
+    "modificationByHours": 3  // [선택]
   },
-  "timeSlotTemplates": [
+  "timeSlotTemplates": [  // [필수] 최소 1개
     {
-      "operatingHours": {
-        "days": ["MON", "WED", "FRI"],
-        "hours": [{"openTime": "14:00", "closeTime": "16:30"}]
+      "operatingHours": {  // [필수]
+        "days": ["MON", "WED", "FRI"],  // [필수] 최소 1개
+        "hours": [  // [필수] 최소 1개
+          {"openTime": "14:00", "closeTime": "16:30"}
+        ]
       },
-      "totalCapacity": 100
+      "calculateCapacityFromUnits": true,  // [선택]
+      "totalCapacity": 100  // [선택]
     }
   ],
-  "timeUnit": 60,
-  "holidays": {...}
+  "timeUnit": 60,  // [선택] 기본값: 60, 30~1440분
+  "holidays": {  // [필수]
+    "dates": ["2025-06-05"],
+    "weekdays": ["SUN"]
+  },
+  "isActive": true  // [선택] 기본값: true
 }
 ```
+
+<Note>
+  **openConfig 타입별 설정**
+
+  - **BATCH**: 일괄 오픈 - openStartAt, openEndAt 필수
+  - **SEQUENTIAL**: 순차 오픈 - openStartByDays, openEndByDays 필수
+  - **GRADED**: 등급별 차등 오픈 - openStartAtByGrade 선택적 (미제공 시 SKS_RESERVATION_POLICY로 자동 계산)
+</Note>
 
 **응답**:
 ```json
@@ -1102,11 +1954,42 @@ enum ReservationHostKind {
 
 **인증**: 필요 (adminProtectedProcedure)
 
+**요청 바디**:
+```json
+{
+  "id": "990e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "startAt": "2025-06-01T18:00:00.000Z",  // [선택]
+  "endAt": "2025-06-01T20:00:00.000Z",  // [선택]
+  "totalCapacity": 150,  // [선택] 최소 1
+  "minGroupSize": 2,  // [선택] 최소 1
+  "maxGroupSize": 6,  // [선택] 최소 1
+  "visitIntervalMinutes": null,  // [선택] nullable, 5~480분
+  "openConfig": {  // [선택]
+    "openType": "SEQUENTIAL",
+    "openStartByDays": 7,
+    "openEndByDays": 1,
+    "modificationByHours": 3
+  },
+  "isActive": false  // [선택]
+}
+```
+
+**응답**: 없음 (200 OK)
+
 #### POST /external/admin/reservation/time-slot/delete
 
 예약 타임슬롯을 삭제합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "id": "990e8400-e29b-41d4-a716-446655440000"  // [필수]
+}
+```
+
+**응답**: 없음 (200 OK)
 
 ### 가격 항목 관리
 
@@ -1119,12 +2002,12 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "contentId": "content-uuid",
-  "kind": "MENU",
-  "isActive": true,
-  "orderBy": "index_asc",
-  "page": 1,
-  "pageSize": 20
+  "contentId": "660e8400-e29b-41d4-a716-446655440000",  // [선택]
+  "kind": "MENU",  // [선택] MENU, OPTION
+  "isActive": true,  // [선택]
+  "orderBy": "index_asc",  // [선택] 기본값: index_asc
+  "page": 1,  // [선택] 기본값: 1
+  "pageSize": 20  // [선택] 기본값: 20, 최대: 500
 }
 ```
 
@@ -1133,29 +2016,31 @@ enum ReservationHostKind {
 {
   "list": [
     {
-      "id": "price-item-uuid",
+      "id": "550e8400-e29b-41d4-a716-446655440000",
       "kind": "MENU",
-      "name": "런치 코스",
-      "description": "2코스 메뉴",
-      "basePrice": 50000,
-      "priceType": "FIXED",
+      "name": "런치 코스 A",
+      "description": "전채+메인+디저트",  // nullable
+      "basePrice": 35000,
+      "priceType": "PER_PERSON",
       "minQuantity": 1,
-      "maxQuantity": 10,
-      "images": ["https://..."],
-      "index": "a0000001",
+      "maxQuantity": 0,  // 0이면 무제한
+      "images": [
+        "https://example.com/images/lunch-a.jpg"
+      ],
+      "index": "00001",
       "isActive": true,
-      "createdAt": "2025-06-01T10:00:00Z",
-      "updatedAt": "2025-06-01T10:00:00Z",
+      "createdAt": "2025-01-15T10:30:00.000Z",
+      "updatedAt": "2025-01-15T10:30:00.000Z",
       "content": {
-        "id": "content-uuid",
-        "name": "뮤지컬 마틸다"
+        "id": "660e8400-e29b-41d4-a716-446655440000",
+        "name": "LG 시그니처 레스토랑"
       }
     }
   ],
   "page": 1,
   "pageSize": 20,
   "pageCount": 1,
-  "totalCount": 1
+  "totalCount": 3
 }
 ```
 
@@ -1168,17 +2053,22 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "contentId": "content-uuid",
-  "kind": "ADULT",
-  "name": "성인 요금",
-  "description": "만 19세 이상",
-  "basePrice": 50000,
-  "priceType": "FIXED",
-  "minQuantity": 1,
-  "maxQuantity": 10,
-  "images": ["https://..."],
-  "isActive": true
+  "contentId": "660e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "kind": "MENU",  // [필수] MENU, OPTION
+  "name": "디너 코스 A",  // [필수] 최대 35자
+  "description": "프리미엄 5코스 디너",  // [선택] 최대 500자
+  "basePrice": 85000,  // [필수] 0 이상
+  "priceType": "PER_PERSON",  // [필수] PER_PERSON, PER_GROUP
+  "minQuantity": 1,  // [선택] 기본값: 1
+  "maxQuantity": 0,  // [선택] 기본값: 0 (무제한)
+  "images": [  // [선택] 기본값: []
+    "https://example.com/images/dinner-a.jpg"
+  ],
+  "isActive": true  // [선택] 기본값: true
 }
+```
+
+**응답**: 없음 (200 OK)
 ```
 
 #### POST /external/admin/reservation/price-item/update
@@ -1190,11 +2080,23 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "id": "price-item-uuid",
-  "name": "런치 코스 (수정)",
-  "basePrice": 55000,
-  "idForBefore": "other-price-item-uuid"
+  "id": "770e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "kind": "MENU",  // [선택]
+  "name": "디너 코스 A (수정)",  // [선택] 최대 35자
+  "description": "프리미엄 7코스 디너",  // [선택] 최대 500자
+  "basePrice": 95000,  // [선택] 0 이상
+  "priceType": "PER_PERSON",  // [선택]
+  "minQuantity": 1,  // [선택]
+  "maxQuantity": 4,  // [선택] 0이면 무제한
+  "images": [  // [선택]
+    "https://example.com/images/dinner-a-new.jpg"
+  ],
+  "isActive": true,  // [선택]
+  "idForBefore": "550e8400-e29b-41d4-a716-446655440000"  // [선택] 순서 변경용, nullable
 }
+```
+
+**응답**: 없음 (200 OK)
 ```
 
 #### POST /external/admin/reservation/price-item/delete
@@ -1206,9 +2108,11 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "id": "price-item-uuid"
+  "id": "770e8400-e29b-41d4-a716-446655440000"  // [필수]
 }
 ```
+
+**응답**: 없음 (200 OK)
 
 ### 예약 관리
 
@@ -1221,42 +2125,96 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "timeSlotId": "timeslot-uuid",
-  "contentId": "content-uuid",
-  "hostId": "host-uuid",
-  "memberId": "member-uuid",
-  "statusIn": ["PENDING", "CONFIRMED"],
-  "reasonCodeIn": ["USER_CREATE_PENDING"],
-  "startsAfter": "2025-06-01",
-  "startsBefore": "2025-06-30",
-  "createdAfter": "2025-05-01",
-  "createdBefore": "2025-05-31",
-  "memName": "홍길동",
-  "memNo": "1234567890",
-  "phoneNumber": "+821012345678",
-  "sn": "LGR",
-  "includesStats": false,
-  "shouldMask": true,
-  "orderBy": "createdAt_desc",
-  "page": 1,
-  "pageSize": 20
+  "timeSlotId": "550e8400-e29b-41d4-a716-446655440000",  // [선택]
+  "contentId": "660e8400-e29b-41d4-a716-446655440000",  // [선택]
+  "hostId": "770e8400-e29b-41d4-a716-446655440000",  // [선택]
+  "memberId": "880e8400-e29b-41d4-a716-446655440000",  // [선택]
+  "statusIn": ["PENDING", "CONFIRMED"],  // [선택] ReservationStatus 배열
+  "reasonCodeIn": ["USER_CREATE_PENDING"],  // [선택] ReservationStatusReasonCode 배열
+  "startsAfter": "2025-06-01T00:00:00.000Z",  // [선택]
+  "startsBefore": "2025-06-30T23:59:59.000Z",  // [선택]
+  "createdAfter": "2025-05-01T00:00:00.000Z",  // [선택]
+  "createdBefore": "2025-05-31T23:59:59.000Z",  // [선택]
+  "memName": "홍길동",  // [선택]
+  "memNo": "LGM1234567890",  // [선택]
+  "phoneNumber": "+821012345678",  // [선택]
+  "sn": "LGR202506",  // [선택] 예약번호 부분 검색
+  "includesStats": false,  // [선택] 기본값: false
+  "shouldMask": true,  // [선택] 기본값: true
+  "orderBy": "createdAt_desc",  // [선택] 기본값: createdAt_desc
+  "page": 1,  // [선택] 기본값: 1
+  "pageSize": 20  // [선택] 기본값: 20, 최대: 500
 }
 ```
 
 **응답** (includesStats=false):
-페이지네이션 응답 포맷 참조
+```json
+{
+  "list": [
+    {
+      "id": "990e8400-e29b-41d4-a716-446655440000",
+      "sn": "LGR20250615001",
+      "status": "CONFIRMED",
+      "groupSize": 4,
+      "phoneNumber": "+821012345678",
+      "gradeAtIssue": "AS03",
+      "requestNote": "창가 자리 요청",  // nullable
+      "additionalInfo": {  // nullable
+        "visitTime": "19:30",
+        "vehicleNumber": "123-가-1234",
+        "needsShowroomTour": false,
+        "needsProductConsultation": false
+      },
+      "createdAt": "2025-06-01T10:00:00.000Z",
+      "updatedAt": "2025-06-10T14:00:00.000Z",
+      "timeSlot": {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "startAt": "2025-06-15T18:00:00.000Z",
+        "endAt": "2025-06-15T20:00:00.000Z",
+        "content": {
+          "id": "660e8400-e29b-41d4-a716-446655440000",
+          "name": "LG 시그니처 레스토랑",
+          "confirmConfig": {
+            "confirmType": "IMMEDIATE"
+          },
+          "host": {
+            "id": "770e8400-e29b-41d4-a716-446655440000",
+            "kind": "RESTAURANT",
+            "name": "LG 시그니처 레스토랑 강남점"
+          },
+          "space": {  // nullable
+            "id": "880e8400-e29b-41d4-a716-446655440000",
+            "name": "메인 홀"
+          }
+        }
+      },
+      "section": null,  // nullable
+      "unit": null,  // nullable
+      "member": {
+        "id": "880e8400-e29b-41d4-a716-446655440000",
+        "memName": "홍*동",  // 마스킹 처리
+        "memNo": "LGM12****7890"  // 마스킹 처리
+      }
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "pageCount": 5,
+  "totalCount": 95
+}
+```
 
 **응답** (includesStats=true):
 ```json
 {
-  "list": [...],
+  "list": [...],  // 위와 동일
   "page": 1,
   "pageSize": 20,
   "pageCount": 5,
   "totalCount": 100,
   "stats": {
     "totalCapacity": 1000,
-    "availableCapacity": 500,
+    "availableCapacity": 160,
     "pendingCount": 50,
     "confirmedCount": 200,
     "cancelledCount": 30,
@@ -1275,7 +2233,33 @@ enum ReservationHostKind {
     "utilizationRate": 40.5,
     "cancellationRate": 6.7,
     "noshowRate": 5.4,
-    "timeSlotStats": [...]
+    "timeSlotStats": [
+      {
+        "timeSlotId": "550e8400-e29b-41d4-a716-446655440000",
+        "startAt": "2025-06-15T18:00:00.000Z",
+        "endAt": "2025-06-15T20:00:00.000Z",
+        "totalCapacity": 100,
+        "availableCapacity": 20,
+        "pendingCount": 10,
+        "confirmedCount": 30,
+        "cancelledCount": 5,
+        "usedCount": 0,
+        "noshowCount": 0,
+        "totalPendingSize": 20,
+        "totalConfirmedSize": 60,
+        "totalCancelledSize": 10,
+        "totalUsedSize": 0,
+        "totalNoshowSize": 0,
+        "actualReservedSize": 80,
+        "actualConfirmedSize": 60,
+        "actualCancelledSize": 10,
+        "reservationRate": 80.0,
+        "confirmationRate": 60.0,
+        "utilizationRate": 0.0,
+        "cancellationRate": 11.1,
+        "noshowRate": 0.0
+      }
+    ]
   }
 }
 ```
@@ -1286,17 +2270,137 @@ enum ReservationHostKind {
 
 **인증**: 필요 (adminProtectedProcedure)
 
+**요청 바디**:
+```json
+{
+  "id": "990e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "shouldMask": true  // [선택] 기본값: true
+}
+```
+
+**응답**:
+```json
+{
+  "id": "990e8400-e29b-41d4-a716-446655440000",
+  "sn": "LGR20250601001",
+  "status": "CONFIRMED",
+  "groupSize": 2,
+  "phoneNumber": "+8210****5678",  // 마스킹 처리
+  "gradeAtIssue": "AS03",  // nullable
+  "requestNote": "창가 자리 요청",  // nullable
+  "additionalInfo": null,  // nullable
+  "createdAt": "2025-06-01T00:00:00.000Z",
+  "updatedAt": "2025-06-01T00:00:00.000Z",
+  "timeSlot": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "startAt": "2025-06-15T14:00:00.000Z",
+    "endAt": "2025-06-15T15:00:00.000Z",
+    "totalCapacity": 100,
+    "content": {
+      "id": "660e8400-e29b-41d4-a716-446655440000",
+      "name": "LG 시그니처 레스토랑",
+      "confirmConfig": {
+        "confirmType": "IMMEDIATE"
+      },
+      "host": {
+        "id": "770e8400-e29b-41d4-a716-446655440000",
+        "kind": "RESTAURANT",
+        "name": "LG 시그니처 레스토랑 강남점"
+      },
+      "space": null  // nullable
+    }
+  },
+  "section": null,  // nullable
+  "unit": null,  // nullable
+  "member": {
+    "id": "880e8400-e29b-41d4-a716-446655440000",
+    "memName": "홍*동",  // 마스킹 처리
+    "memNo": "LGM12****7890"  // 마스킹 처리
+  },
+  "priceItems": [],
+  "units": [],
+  "histories": [
+    {
+      "id": "aa1e8400-e29b-41d4-a716-446655440000",
+      "status": "PENDING",
+      "reason": "USER_CREATE_PENDING",
+      "note": "예약 생성",  // nullable
+      "createdAt": "2025-06-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
 #### POST /external/admin/reservation/create
 
 예약을 생성합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
 
+**요청 바디**:
+```json
+{
+  "timeSlotId": "550e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "groupSize": 2,  // [필수] 최소 1
+  "phoneNumber": "+821012345678",  // [필수]
+  "memberId": "880e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "note": "관리자 메모",  // [선택] 최대 500자
+  "additionalInfo": {  // [선택] 추가 정보
+    "visitTime": "19:30",
+    "vehicleNumber": "123-가-1234",
+    "needsShowroomTour": true,
+    "needsProductConsultation": false
+  },
+  "priceItems": [  // [선택]
+    {
+      "priceItemId": "770e8400-e29b-41d4-a716-446655440000",
+      "quantity": 2
+    }
+  ],
+  "unitIds": [  // [선택]
+    "bb0e8400-e29b-41d4-a716-446655440000",
+    "cc0e8400-e29b-41d4-a716-446655440000"
+  ]
+}
+```
+
+**응답**:
+```json
+{
+  "id": "990e8400-e29b-41d4-a716-446655440000",
+  "sn": "LGR20250601001"
+}
+```
+
 #### POST /external/admin/reservation/update
 
 예약을 수정합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "id": "990e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "groupSize": 3,  // [선택] 최소 1
+  "phoneNumber": "+821098765432",  // [선택]
+  "requestNote": "업데이트된 요청사항",  // [선택] 최대 500자
+  "additionalInfo": {  // [선택] 추가 정보
+    "visitTime": "20:00",
+    "vehicleNumber": "234-나-5678",
+    "needsShowroomTour": false,
+    "needsProductConsultation": true
+  },
+  "priceItems": [  // [선택]
+    {
+      "priceItemId": "770e8400-e29b-41d4-a716-446655440000",
+      "quantity": 3
+    }
+  ]
+}
+```
+
+**응답**: 없음 (200 OK)
 
 #### POST /external/admin/reservation/status/bulk-change
 
@@ -1307,9 +2411,12 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "ids": ["reservation-id-1", "reservation-id-2"],
-  "status": "CONFIRMED",
-  "note": "관리자 일괄 승인"
+  "ids": [  // [필수] 최소 1개
+    "990e8400-e29b-41d4-a716-446655440000",
+    "aa0e8400-e29b-41d4-a716-446655440000"
+  ],
+  "status": "CONFIRMED",  // [필수] ReservationStatus
+  "note": "관리자 일괄 승인"  // [선택] 최대 500자
 }
 ```
 
@@ -1317,7 +2424,7 @@ enum ReservationHostKind {
 ```json
 {
   "successCount": 1,
-  "failedIds": ["reservation-id-2"]
+  "failedIds": ["aa0e8400-e29b-41d4-a716-446655440000"]
 }
 ```
 
@@ -1330,9 +2437,12 @@ enum ReservationHostKind {
 **요청 바디**:
 ```json
 {
-  "contentId": "content-uuid",
-  "lotteryDate": "2025-05-15",
-  "winnerIds": ["reservation-id-1", "reservation-id-2"]
+  "contentId": "660e8400-e29b-41d4-a716-446655440000",  // [필수]
+  "lotteryDate": "2025-05-15",  // [필수] YYYY-MM-DD 형식
+  "winnerIds": [  // [필수] 최소 1개
+    "990e8400-e29b-41d4-a716-446655440000",
+    "aa0e8400-e29b-41d4-a716-446655440000"
+  ]
 }
 ```
 
@@ -1343,14 +2453,6 @@ enum ReservationHostKind {
   "loserCount": 8
 }
 ```
-
-### 예약 통계
-
-#### POST /external/admin/reservation/stats/overall
-
-전체 예약 통계를 조회합니다.
-
-**인증**: 필요 (adminProtectedProcedure)
 
 ### 회원 관리
 
@@ -1363,9 +2465,9 @@ enum ReservationHostKind {
 **요청 파라미터**:
 ```json
 {
-  "memberId": "member-uuid",  // optional (memberId 또는 memNo 중 하나 필수)
-  "memNo": "1234567890",      // optional (memberId 또는 memNo 중 하나 필수)
-  "kind": "HOME_APPLIANCE_CONCIERGE"  // optional (MembershipBenefitsKind)
+  "memberId": "880e8400-e29b-41d4-a716-446655440000",  // [선택] memberId 또는 memNo 중 하나 필수
+  "memNo": "LGM1234567890",  // [선택] memberId 또는 memNo 중 하나 필수
+  "kind": "HOME_APPLIANCE_CONCIERGE"  // [선택] MembershipBenefitsKind
 }
 ```
 
@@ -1374,12 +2476,12 @@ enum ReservationHostKind {
 {
   "list": [
     {
-      "sn": "COUPON123456",
+      "sn": "COUPON202501150001",
       "status": "ISSUED",  // CouponPoolStatus: ISSUED, REDEEMED, EXPIRED
-      "issuedAt": "2025-01-01T00:00:00Z",
-      "redeemedAt": null,
-      "startDate": "2025-01-01T00:00:00Z",
-      "endDate": "2025-12-31T23:59:59Z",
+      "issuedAt": "2025-01-01T09:00:00.000Z",
+      "redeemedAt": "2025-01-10T14:30:00.000Z",  // nullable
+      "startDate": "2025-01-01T00:00:00.000Z",
+      "endDate": "2025-12-31T23:59:59.000Z",
       "coupon": {
         "kind": "FREE_APPLIANCE_RELOCATION_SERVICE",  // IntegratedCouponKind
         "name": "무료 가전 이전 설치 서비스",
@@ -1387,7 +2489,27 @@ enum ReservationHostKind {
         "discountValue": "0",
         "maxDiscount": "0"
       },
-      "reservation": null  // 또는 { "id": "reservation-uuid" }
+      "reservation": {  // nullable
+        "id": "990e8400-e29b-41d4-a716-446655440000"
+      }
+    },
+    {
+      "sn": "COUPON202501150002",
+      "status": "REDEEMED",
+      "issuedAt": "2025-01-05T10:00:00.000Z",
+      "redeemedAt": "2025-01-12T15:45:00.000Z",
+      "startDate": "2025-01-05T00:00:00.000Z",
+      "endDate": "2025-06-30T23:59:59.000Z",
+      "coupon": {
+        "kind": "LOUNGE_ACCESS",
+        "name": "LG 시그니처 라운지 이용권",
+        "discountType": "PASS",
+        "discountValue": "0",
+        "maxDiscount": "0"
+      },
+      "reservation": {
+        "id": "aa0e8400-e29b-41d4-a716-446655440000"
+      }
     }
   ]
 }

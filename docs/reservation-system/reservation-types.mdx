@@ -186,12 +186,18 @@ export interface IConfirmConfig {
 export const OpenType = {
   BATCH: 'BATCH',         // 일괄 오픈
   SEQUENTIAL: 'SEQUENTIAL', // 순차 오픈
+  GRADED: 'GRADED',       // 등급별 차등 오픈
 } as const;
 
 /**
  * 예약 오픈 타입 정의
  */
 export type TReservationOpenType = (typeof OpenType)[keyof typeof OpenType];
+
+/**
+ * 멤버십 등급 타입
+ */
+export type TMembershipGrade = 'AS00' | 'AS01' | 'AS02' | 'AS03' | 'AS04' | 'AS05';
 
 /**
  * 기본 예약 오픈 설정 인터페이스
@@ -221,9 +227,21 @@ export interface ISequentialOpenConfig extends IBaseOpenConfig {
 }
 
 /**
+ * 등급별 차등 오픈 설정 인터페이스
+ */
+export interface IGradedOpenConfig extends IBaseOpenConfig {
+  openType: typeof OpenType.GRADED;
+  openStartAtByGrade?: {
+    [key in TMembershipGrade]: string;  // ISO 8601 DateTime
+  };  // 미제공 시 자동 계산 (SKS_RESERVATION_POLICY 기반)
+  modificationByDays?: number;  // D-N일 수정/취소 마감
+  reservationByDays?: number;   // D-N일 예약 마감
+}
+
+/**
  * 오픈 설정 유니온 타입
  */
-export type TOpenConfig = IBatchOpenConfig | ISequentialOpenConfig;
+export type TOpenConfig = IBatchOpenConfig | ISequentialOpenConfig | IGradedOpenConfig;
 ```
 
 ## 예약 상태 관리
@@ -339,6 +357,25 @@ export interface IReservationDetailedChanges {
     old: string;
     new: string;
   };
+}
+```
+
+### 예약 추가 정보
+
+```typescript
+/**
+ * 예약 추가 정보 인터페이스
+ * 예약 생성/수정 시 추가적인 정보를 담는 필드
+ */
+export interface IReservationAdditionalInfo {
+  /** 방문 예정 시간 (HH:MM 형식) */
+  visitTime?: string;
+  /** 차량 번호 (예: 123-가-1234, 서울 12-가-1234) */
+  vehicleNumber?: string;
+  /** 쇼룸 투어 필요 여부 */
+  needsShowroomTour?: boolean;
+  /** 제품 상담 필요 여부 */
+  needsProductConsultation?: boolean;
 }
 ```
 
@@ -602,6 +639,26 @@ const sequentialOpenConfig: ISequentialOpenConfig = {
 // 골드 등급 이상만 예약 가능
 const restrictionConfig: IRestrictionConfig = {
   minMembershipGrade: 'AS03'
+};
+```
+
+### 예약 추가 정보 샘플
+
+```typescript
+// 예약 추가 정보
+const additionalInfoSample: IReservationAdditionalInfo = {
+  visitTime: '19:30',
+  vehicleNumber: '123-가-1234',
+  needsShowroomTour: true,
+  needsProductConsultation: false
+};
+
+// 지역 번호판 예시
+const additionalInfoWithRegion: IReservationAdditionalInfo = {
+  visitTime: '14:00',
+  vehicleNumber: '서울 12-가-5678',
+  needsShowroomTour: false,
+  needsProductConsultation: true
 };
 ```
 
