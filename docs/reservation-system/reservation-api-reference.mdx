@@ -1104,10 +1104,10 @@ enum ReservationHostKind {
       "updatedAt": "2025-06-20T14:00:00.000Z"
     }
   ],
-  "total": 5,
   "page": 1,
   "pageSize": 10,
-  "totalPages": 1
+  "pageCount": 1,
+  "totalCount": 5
 }
 ```
 
@@ -2022,7 +2022,7 @@ enum ReservationHostKind {
 
 **응답**: 없음 (200 OK)
 
-### 가격 항목 관리
+### 예약 가격 항목 관리
 
 #### POST /external/admin/reservation/price-items
 
@@ -2512,10 +2512,10 @@ enum ReservationHostKind {
       "updatedAt": "2025-06-25T09:00:00.000Z"
     }
   ],
-  "total": 10,
   "page": 1,
   "pageSize": 20,
-  "totalPages": 1
+  "pageCount": 1,
+  "totalCount": 10
 }
 ```
 
@@ -2555,7 +2555,7 @@ enum ReservationHostKind {
 }
 ```
 
-**응답**: 없음 (성공 시 204 No Content)
+**응답**: 없음 (200 OK)
 
 #### POST /external/admin/reservation/notice/update
 
@@ -2574,7 +2574,7 @@ enum ReservationHostKind {
 }
 ```
 
-**응답**: 없음 (성공 시 204 No Content)
+**응답**: 없음 (200 OK)
 
 #### POST /external/admin/reservation/notice/delete
 
@@ -2589,7 +2589,7 @@ enum ReservationHostKind {
 }
 ```
 
-**응답**: 없음 (성공 시 204 No Content)
+**응답**: 없음 (200 OK)
 
 ### 회원 관리
 
