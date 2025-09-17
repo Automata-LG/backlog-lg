@@ -41,6 +41,10 @@
               "lottery-system/lottery-api-reference",
               "lottery-system/lottery-future-improvements"
             ]
+          },
+          {
+            "group": "유틸 시스템",
+            "pages": ["util-system/upload-api-reference"]
           }
         ]
       }
