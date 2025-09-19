@@ -856,6 +856,7 @@ enum ReservationHostKind {
       "status": "CONFIRMED",  // PENDING, CONFIRMED, USED, CANCELLED, NOSHOW
       "groupSize": 4,
       "phoneNumber": "+821012345678",
+      "gradeAtIssue": "AS03",  // nullable - 예약 시점의 회원 등급
       "requestNote": "창가 자리 요청",  // nullable
       "additionalInfo": {  // nullable
         "visitTime": "19:30",
@@ -901,6 +902,7 @@ enum ReservationHostKind {
         "minCapacity": 2,
         "maxCapacity": 4
       },
+      "couponPoolId": "cc0e8400-e29b-41d4-a716-446655440000",  // nullable
       "hists": [
         {
           "id": 1,  // number, not uuid
@@ -1003,6 +1005,7 @@ enum ReservationHostKind {
     "minCapacity": 2,
     "maxCapacity": 4
   },
+  "couponPoolId": "cc0e8400-e29b-41d4-a716-446655440000",  // nullable
   "hists": [
     {
       "id": 1,  // number, not uuid
@@ -2264,10 +2267,12 @@ enum ReservationHostKind {
 {
   "timeSlotId": "550e8400-e29b-41d4-a716-446655440000",  // [선택]
   "contentId": "660e8400-e29b-41d4-a716-446655440000",  // [선택]
-  "hostId": "770e8400-e29b-41d4-a716-446655440000",  // [선택]
+  "hostId": "770e8400-e29b-41d4-a716-446655440000",  // [선택] 단일 호스트 ID
+  "hostIds": ["770e8400...", "880e8400..."],  // [선택] 복수 호스트 ID 배열
   "memberId": "880e8400-e29b-41d4-a716-446655440000",  // [선택]
   "statusIn": ["PENDING", "CONFIRMED"],  // [선택] ReservationStatus 배열
   "reasonCodeIn": ["USER_CREATE_PENDING"],  // [선택] ReservationStatusReasonCode 배열
+  "hasUnit": true,  // [선택] 유닛 할당 여부 (true: 할당된 것만, false: 미할당만)
   "startsAfter": "2025-06-01T00:00:00.000Z",  // [선택]
   "startsBefore": "2025-06-30T23:59:59.000Z",  // [선택]
   "createdAfter": "2025-05-01T00:00:00.000Z",  // [선택]
@@ -2331,7 +2336,8 @@ enum ReservationHostKind {
         "id": "880e8400-e29b-41d4-a716-446655440000",
         "memName": "홍*동",  // 마스킹 처리
         "memNo": "LGM12****7890"  // 마스킹 처리
-      }
+      },
+      "couponPoolId": "cc0e8400-e29b-41d4-a716-446655440000"  // nullable
     }
   ],
   "page": 1,
@@ -2394,7 +2400,59 @@ enum ReservationHostKind {
         "confirmationRate": 60.0,
         "utilizationRate": 0.0,
         "cancellationRate": 11.1,
-        "noshowRate": 0.0
+        "noshowRate": 0.0,
+        "sectionBreakdown": [  // [선택] 섹션이 있는 경우에만 포함
+          {
+            "sectionId": "770e8400-e29b-41d4-a716-446655440000",
+            "sectionName": "메인 홀",
+            "totalCapacity": 60,
+            "availableCapacity": 10,
+            "pendingCount": 6,
+            "confirmedCount": 20,
+            "cancelledCount": 3,
+            "usedCount": 0,
+            "noshowCount": 0,
+            "totalPendingSize": 12,
+            "totalConfirmedSize": 40,
+            "totalCancelledSize": 6,
+            "totalUsedSize": 0,
+            "totalNoshowSize": 0,
+            "actualReservedSize": 52,
+            "actualConfirmedSize": 40,
+            "actualCancelledSize": 6,
+            "reservationRate": 86.7,
+            "confirmationRate": 66.7,
+            "utilizationRate": 0.0,
+            "cancellationRate": 10.3,
+            "noshowRate": 0.0
+          }
+        ]
+      }
+    ],
+    "sectionBreakdown": [  // [선택] 전체 기간 섹션별 통계 (섹션이 있는 경우에만 포함)
+      {
+        "sectionId": "770e8400-e29b-41d4-a716-446655440000",
+        "sectionName": "메인 홀",
+        "totalCapacity": 600,
+        "availableCapacity": 100,
+        "pendingCount": 30,
+        "confirmedCount": 120,
+        "cancelledCount": 18,
+        "usedCount": 90,
+        "noshowCount": 10,
+        "totalPendingSize": 60,
+        "totalConfirmedSize": 240,
+        "totalCancelledSize": 36,
+        "totalUsedSize": 180,
+        "totalNoshowSize": 20,
+        "actualReservedSize": 500,
+        "actualConfirmedSize": 440,
+        "actualCancelledSize": 36,
+        "reservationRate": 83.3,
+        "confirmationRate": 73.3,
+        "utilizationRate": 40.9,
+        "cancellationRate": 6.7,
+        "noshowRate": 4.5
       }
     ]
   }
@@ -2454,6 +2512,7 @@ enum ReservationHostKind {
     "memName": "홍*동",  // 마스킹 처리
     "memNo": "LGM12****7890"  // 마스킹 처리
   },
+  "couponPoolId": "cc0e8400-e29b-41d4-a716-446655440000",  // nullable
   "priceItems": [],
   "units": [],
   "histories": [
@@ -2649,6 +2708,109 @@ enum ReservationHostKind {
       }
     }
   ]
+}
+```
+
+## 섹션별 통계 (Section Breakdown Statistics)
+
+### 개요
+
+예약 시스템은 섹션별 세부 통계를 제공합니다. 이 기능은 100% 하위 호환성을 유지하며, 섹션이 있는 경우에만 `sectionBreakdown` 필드가 응답에 포함됩니다.
+
+### 특징
+
+1. **자동 유닛 타입 감지**
+   - **가변 유닛** (Variable Units): 테이블, 룸 등 가변 수용 인원 유닛
+     - 예: 테이블 T1 (2-4명), 룸 R1 (6-8명)
+     - `totalCapacity`는 유닛(테이블/룸) 개수
+     - 모든 size 필드(`totalPendingSize`, `totalConfirmedSize` 등)가 테이블/룸 수를 의미
+   - **고정 유닛** (Fixed Units): 좌석 등 1:1 고정 유닛
+     - 예: 좌석 A1, A2, A3 (각 1명)
+     - `totalCapacity`는 총 좌석 수
+     - 모든 size 필드가 예약된 인원수를 의미
+
+2. **통계 계산 로직**
+   - **섹션 없음**: 모든 size 필드가 인원수 (groupSize) 기반 - 기존 로직과 100% 동일
+   - **섹션 있음 + 가변 유닛**: 모든 size 필드가 테이블/룸 수 (1 예약 = 1 유닛)
+   - **섹션 있음 + 고정 유닛**: 모든 size 필드가 인원수 (groupSize) 기반
+
+3. **계층적 통계 구조**
+   ```
+   전체 통계 (overallStats)
+   └── 타임슬롯별 통계 (timeSlotStats[])
+       └── 섹션별 통계 (sectionBreakdown[])
+   └── 전체 기간 섹션별 통계 (sectionBreakdown[])
+   ```
+
+4. **100% 하위 호환성**
+   - 섹션이 없는 기존 시스템: 변경 없음 (항상 인원수 기준)
+   - 섹션이 있는 시스템: 자동으로 `sectionBreakdown` 추가
+   - 기존 UI/시스템 영향 없음
+
+### sectionBreakdown 스키마
+
+```typescript
+interface SectionStats {
+  sectionId: string;           // 섹션 ID
+  sectionName: string;          // 섹션명 (예: "메인 홀", "프라이빗 룸")
+
+  // 용량 정보
+  totalCapacity: number;        // 총 수용량 (가변: 유닛수, 고정: 좌석수)
+  availableCapacity: number;    // 잔여 용량
+
+  // 예약 카운트
+  pendingCount: number;         // 대기 예약 수
+  confirmedCount: number;       // 확정 예약 수
+  cancelledCount: number;       // 취소 예약 수
+  usedCount: number;           // 이용완료 예약 수
+  noshowCount: number;         // 노쇼 예약 수
+
+  // 규모 통계 (섹션+가변유닛: 테이블수, 섹션+고정유닛: 인원수, 섹션없음: 인원수)
+  totalPendingSize: number;     // 대기 규모
+  totalConfirmedSize: number;   // 확정 규모
+  totalCancelledSize: number;   // 취소 규모
+  totalUsedSize: number;        // 이용완료 규모
+  totalNoshowSize: number;      // 노쇼 규모
+
+  // 복합 계산
+  actualReservedSize: number;   // 실제 점유 규모
+  actualConfirmedSize: number;  // 실제 확정 규모
+  actualCancelledSize: number;  // 실제 취소 규모 (미당첨 제외)
+
+  // 비율 (%)
+  reservationRate: number;      // 예약률
+  confirmationRate: number;     // 확정률
+  utilizationRate: number;      // 이용률
+  cancellationRate: number;     // 취소율
+  noshowRate: number;          // 노쇼율
+}
+```
+
+### 사용 예시
+
+#### 레스토랑 (가변 유닛 - 테이블)
+```json
+{
+  "sectionId": "770e8400...",
+  "sectionName": "메인 홀",
+  "totalCapacity": 20,          // 20개 테이블
+  "availableCapacity": 5,       // 5개 테이블 예약 가능
+  "confirmedCount": 15,         // 15건 예약 확정
+  "totalConfirmedSize": 15,     // 15개 테이블 예약됨
+  "reservationRate": 75.0       // 테이블 예약률 75%
+}
+```
+
+#### 아트센터 (고정 유닛 - 좌석)
+```json
+{
+  "sectionId": "880e8400...",
+  "sectionName": "1층 오케스트라석",
+  "totalCapacity": 500,         // 500개 좌석
+  "availableCapacity": 150,     // 150명 예약 가능
+  "confirmedCount": 175,        // 175건 예약 확정
+  "totalConfirmedSize": 350,    // 350명 예약됨
+  "reservationRate": 70.0       // 좌석 예약률 70%
 }
 ```
 
