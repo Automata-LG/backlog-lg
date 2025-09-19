@@ -1258,8 +1258,15 @@ enum ReservationHostKind {
     }
   ],
   "holidays": {  // [필수]
-    "fixedHolidays": ["01-01", "12-25"],
-    "temporaryHolidays": ["2025-02-08"]
+    "regular": {
+      "weekly": ["SUN"],  // 매주 일요일 휴일
+      "monthly": [],  // 매월 특정 주차의 특정 요일 (예: 둘째 월요일)
+      "yearly": [  // 매년 특정 날짜
+        {"month": 1, "day": 1},
+        {"month": 12, "day": 25}
+      ]
+    },
+    "specific": ["2025-02-08", "2025-02-09"]  // 특정 날짜
   },
   "description": "프리미엄 레스토랑",  // [필수] 최대 500자
   "images": ["https://example.com/rest1.jpg", "https://example.com/rest2.jpg"],  // [필수] 최소 1개
@@ -1299,8 +1306,15 @@ enum ReservationHostKind {
     }
   ],
   "holidays": {  // [선택]
-    "fixedHolidays": ["01-01", "12-25"],
-    "temporaryHolidays": ["2025-02-09", "2025-02-10"]
+    "regular": {
+      "weekly": ["SUN"],
+      "monthly": [],
+      "yearly": [
+        {"month": 1, "day": 1},
+        {"month": 12, "day": 25}
+      ]
+    },
+    "specific": ["2025-02-09", "2025-02-10"]
   },
   "description": "업데이트된 설명",  // [선택] 최대 500자
   "images": ["https://example.com/img1.jpg", "https://example.com/img2.jpg"],  // [선택]
@@ -1997,23 +2011,19 @@ enum ReservationHostKind {
 
 ### 예약 가격 항목 관리
 
-#### POST /external/admin/reservation/price-items
+#### GET /external/admin/reservation/price-items
 
 예약 가격 항목 목록을 조회합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
 
-**요청 바디**:
-```json
-{
-  "contentId": "660e8400-e29b-41d4-a716-446655440000",  // [선택]
-  "kind": "MENU",  // [선택] TICKET, MENU, SERVICE
-  "isActive": true,  // [선택]
-  "orderBy": "index_asc",  // [선택] 기본값: index_asc
-  "page": 1,  // [선택] 기본값: 1
-  "pageSize": 20  // [선택] 기본값: 20, 최대: 500
-}
-```
+**요청 파라미터**:
+- `contentId`: [선택] 컨텐츠 ID (UUID)
+- `kind`: [선택] 가격 항목 종류 (TICKET, MENU, SERVICE)
+- `isActive`: [선택] 활성 상태 (기본값: true)
+- `orderBy`: [선택] 정렬 순서 (기본값: index_asc)
+- `page`: [선택] 페이지 번호 (기본값: 1)
+- `pageSize`: [선택] 페이지 크기 (기본값: 20, 최대: 500)
 
 **응답**:
 ```json
@@ -2118,24 +2128,20 @@ enum ReservationHostKind {
 
 ### 예약 타임슬롯 관리
 
-#### POST /external/admin/reservation/timeslots
+#### GET /external/admin/reservation/time-slots
 
 예약 타임슬롯 목록을 조회합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
 
-**요청 바디**:
-```json
-{
-  "contentId": "660e8400-e29b-41d4-a716-446655440000",  // [필수]
-  "startsAfter": "2025-06-01T00:00:00.000Z",  // [선택]
-  "startsBefore": "2025-06-30T23:59:59.000Z",  // [선택]
-  "isActive": true,  // [선택] 기본값: true
-  "orderBy": "startAt_asc",  // [선택] 기본값: startAt_asc
-  "page": 1,  // [선택] 기본값: 1
-  "pageSize": 20  // [선택] 기본값: 20, 최대: 500
-}
-```
+**요청 파라미터**:
+- `contentId`: [선택] 컨텐츠 ID (UUID)
+- `startsAfter`: [선택] 시작일 이후 (ISO 8601)
+- `startsBefore`: [선택] 시작일 이전 (ISO 8601)
+- `isActive`: [선택] 활성 상태 (기본값: true)
+- `orderBy`: [선택] 정렬 순서 (기본값: startAt_asc)
+- `page`: [선택] 페이지 번호 (기본값: 1)
+- `pageSize`: [선택] 페이지 크기 (기본값: 20, 최대: 500)
 
 **응답**:
 ```json
@@ -2512,19 +2518,15 @@ enum ReservationHostKind {
 }
 ```
 
-#### POST /external/admin/reservation/get
+#### GET /external/admin/reservation/get
 
 예약을 상세 조회합니다.
 
 **인증**: 필요 (adminProtectedProcedure)
 
-**요청 바디**:
-```json
-{
-  "id": "990e8400-e29b-41d4-a716-446655440000",  // [필수]
-  "shouldMask": true  // [선택] 기본값: true
-}
-```
+**요청 파라미터**:
+- `id`: [필수] 예약 ID (UUID)
+- `shouldMask`: [선택] 마스킹 여부 (기본값: true)
 
 **응답**:
 ```json
@@ -2763,6 +2765,54 @@ enum ReservationHostKind {
   ]
 }
 ```
+
+#### POST /external/admin/member/use-coupon
+
+예약에 대해 회원의 가상 쿠폰을 사용 처리합니다.
+
+**인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "reservationId": "990e8400-e29b-41d4-a716-446655440000",  // [필수] 예약 ID
+  "memberId": "880e8400-e29b-41d4-a716-446655440000",  // [선택] memberId 또는 memNo 중 하나 필수
+  "memNo": "LGM1234567890",  // [선택] memberId 또는 memNo 중 하나 필수
+  "couponKind": "SKS_DINING_MEAL_DISCOUNT",  // [필수] CouponKind (DB에 등록된 쿠폰만 가능)
+  "note": "관리자 수동 쿠폰 처리"  // [선택] 최대 500자
+}
+```
+
+**쿠폰 종류** (CouponKind - DB에 등록된 쿠폰만 사용 가능):
+- `SKS_DINING_MEAL_DISCOUNT`: SKS 레스토랑 식사권 (2년간 각 1회)
+- `SKS_DINING_SIGNATURE_BEVERAGE_FREE`: SKS 시그니처 음료권 (일 2회, 블랙 등급만)
+- `FREE_ADMISSION_ART_CENTER_SHOW`: LG 아트센터 무료 관람권
+- `LG_TWINS_TICKET_DISCOUNT`: LG 트윈스 경기 관람 할인권
+- `SUBSCRIPTION_REWARD`: 구독 리워드 쿠폰
+
+**처리 과정**:
+1. 가상 쿠폰을 실제 CouponPool 레코드로 생성
+2. 즉시 REDEEMED 상태로 설정
+3. 예약과 쿠폰 연결
+4. 사용 이력 생성
+
+**제한 조건**:
+- 예약 상태가 `CONFIRMED`여야 함
+- 예약에 이미 쿠폰이 연결되어 있지 않아야 함
+- 예약 회원과 입력 회원이 일치해야 함
+- 회원 등급이 해당 쿠폰 사용 가능 등급이어야 함
+- 쿠폰별 사용 가능 횟수를 초과하지 않아야 함
+
+**응답**: 없음 (200 OK)
+
+**에러 코드**:
+- `FDE-C-002`: 예약/회원/쿠폰 정보를 찾을 수 없음
+- `FDE-A-002`: 검증 실패
+  - 예약이 CONFIRMED 상태가 아님
+  - 이미 쿠폰이 사용된 예약
+  - 예약 회원과 입력 회원 불일치
+  - 해당 등급에서 쿠폰 사용 불가
+  - 사용 가능 횟수 초과
 
 ## 섹션별 통계 (Section Breakdown Statistics)
 
