@@ -1627,6 +1627,59 @@ enum ReservationHostKind {
 
 **응답**: 없음 (200 OK)
 
+#### POST /external/admin/reservation/unit/assign
+
+예약에 유닛을 배정하거나 변경합니다.
+
+**인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "reservationId": "990e8400-e29b-41d4-a716-446655440000",  // [필수] 예약 ID
+  "unitId": "bb0e8400-e29b-41d4-a716-446655440000",  // [필수] 배정할 유닛 ID
+  "note": "VIP 고객 요청으로 유닛 변경"  // [선택] 최대 500자
+}
+```
+
+**제한 조건**:
+- 예약 상태가 `CONFIRMED`인 경우만 가능
+- 타임슬롯 시작 시간 이전까지만 가능
+- 같은 섹션 내의 유닛으로만 배정/변경 가능
+- 유닛의 capacity가 예약 인원(groupSize)과 일치해야 함
+- 해당 타임슬롯에 유닛이 사용 가능해야 함
+
+**응답**: 없음 (200 OK)
+
+**에러 코드**:
+- `FDE-C-002`: 예약을 찾을 수 없음
+- `FDE-A-002`: 검증 실패 (상태, 시간, 섹션, capacity, 가용성 등)
+
+#### POST /external/admin/reservation/unit/unassign
+
+예약의 유닛 배정을 취소합니다.
+
+**인증**: 필요 (adminProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "reservationId": "990e8400-e29b-41d4-a716-446655440000",  // [필수] 예약 ID
+  "note": "고객 요청으로 유닛 배정 취소"  // [선택] 최대 500자
+}
+```
+
+**제한 조건**:
+- 예약 상태가 `CONFIRMED`인 경우만 가능
+- 유닛이 배정되어 있어야 함
+- 타임슬롯 시작 시간 이전까지만 가능
+
+**응답**: 없음 (200 OK)
+
+**에러 코드**:
+- `FDE-C-002`: 예약을 찾을 수 없음
+- `FDE-A-002`: 검증 실패 (상태, 유닛 미배정, 시간 초과 등)
+
 ### 예약 컨텐츠 관리
 
 #### POST /external/admin/reservation/contents
