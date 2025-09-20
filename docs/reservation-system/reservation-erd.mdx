@@ -253,6 +253,16 @@ erDiagram
         DateTime updatedAt
     }
 
+    ReservationWaitlist {
+        UUID id PK
+        ReservationWaitlistType type
+        UUID memberId FK
+        UUID contentId FK
+        UUID timeSlotId FK "nullable"
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
     %% 관계 정의
     ReservationHost ||--o{ ReservationSpace : "has (informational)"
     ReservationHost ||--o{ ReservationSection : "has (operational)"
@@ -273,9 +283,12 @@ erDiagram
     Member ||--o{ Reservation : "makes"
     Member ||--o{ TermsAgreement : "agrees to"
     Member ||--o{ CouponPool : "owns"
+    Member ||--o{ ReservationWaitlist : "joins"
     Coupon ||--o{ CouponPool : "has"
     CouponPool ||--o{ CouponPoolHist : "has"
     Admin ||--o{ ReservationHist : "creates"
+    ReservationContent ||--o{ ReservationWaitlist : "has waitlist for"
+    ReservationTimeSlot }o--o{ ReservationWaitlist : "may have waitlist"
 ```
 
 ## Prisma 스키마
@@ -616,6 +629,41 @@ model ReservationHist {
   @@map(name: "reservationHist")
 }
 ```
+
+### 예약 대기 (ReservationWaitlist)
+
+```sql
+enum ReservationWaitlistType {
+  VACANCY  // 빈자리 알림
+  OPEN     // 오픈 알림
+}
+
+model ReservationWaitlist {
+  id   String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type ReservationWaitlistType
+
+  member     Member               @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId   String               @db.Uuid
+  content    ReservationContent   @relation(fields: [contentId], references: [id])
+  contentId  String               @db.Uuid
+  timeSlot   ReservationTimeSlot? @relation(fields: [timeSlotId], references: [id])
+  timeSlotId String?              @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([memberId, contentId, timeSlotId, type])
+  @@index([timeSlotId, type])
+  @@index([contentId, type])
+  @@map(name: "reservationWaitlist")
+}
+```
+
+**주요 특징**:
+- `type`: 대기 유형 (VACANCY: 빈자리 알림, OPEN: 오픈 알림)
+- `timeSlotId`: VACANCY 타입에서만 사용, OPEN 타입에서는 null
+- 유니크 제약: 동일한 회원이 같은 대상에 중복 신청 불가
+- 인덱스: 타임슬롯/컨텐츠별 빠른 조회를 위한 인덱스
 
 ### 쿠폰 시스템
 

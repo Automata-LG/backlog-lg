@@ -825,7 +825,7 @@ enum ReservationHostKind {
 
 ### 내 예약 목록 조회
 
-#### POST /external/app/reservation/me/reservations
+#### POST /external/app/me/reservations
 
 내 예약 목록을 조회합니다.
 
@@ -922,7 +922,7 @@ enum ReservationHostKind {
 
 ### 내 예약 상세 조회
 
-#### GET /external/app/reservation/me/reservation/get
+#### GET /external/app/me/reservation/get
 
 내 예약을 상세 조회합니다.
 
@@ -1149,6 +1149,108 @@ enum ReservationHostKind {
 - 예약 상태가 CONFIRMED여야 함
 - 현재 시간이 타임슬롯 시작 시간 30분 전부터 종료 시간 이내여야 함
 - 본인의 예약이어야 함
+
+### 예약 빈자리 알림 대기 현황 조회
+
+#### GET /external/app/reservation/vacancy-waitlist-status
+
+예약 빈자리 알림 대기 현황을 조회합니다.
+
+**인증**: 불필요
+
+**요청 파라미터**:
+- `timeSlotId`: [필수] 타임슬롯 ID (UUID)
+
+**응답**:
+```json
+{
+  "totalWaitlistCount": 3,  // 현재 대기 중인 인원 수
+  "canJoinWaitlist": true    // 추가 신청 가능 여부 (최대 10명)
+}
+```
+
+### 예약 빈자리 알림 대기 신청/취소
+
+#### POST /external/app/reservation/vacancy-waitlist-toggle
+
+예약 빈자리 알림 대기를 신청/취소합니다.
+
+**인증**: 필요 (memberProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "timeSlotId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**응답**:
+```json
+{
+  "isWaitlisted": true  // 대기 신청 상태 (true: 신청됨, false: 취소됨)
+}
+```
+
+**제약사항**:
+- 타임슬롯이 매진 상태여야 신청 가능
+- 타임슬롯당 최대 10명까지만 대기 가능
+- 빈자리 발생 시 선착순으로 알림 발송 후 대기에서 자동 제거
+
+### 예약 오픈 알림 대기 신청/취소
+
+#### POST /external/app/reservation/open-waitlist-toggle
+
+예약 오픈 알림 대기를 신청/취소합니다.
+
+**인증**: 필요 (memberProtectedProcedure)
+
+**요청 바디**:
+```json
+{
+  "contentId": "660e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**응답**:
+```json
+{
+  "isWaitlisted": true  // 대기 신청 상태 (true: 신청됨, false: 취소됨)
+}
+```
+
+**알림 시점**:
+- 매월 1일 오전 10시 크론잡 실행
+- 일반 등급: 다음달 1일 ~ 다다음달 말일 예약 가능 안내
+- 블랙(AS00) 등급: 다음달 1일 ~ 다다다음달 말일 예약 가능 안내
+
+### 내 예약 알림 대기 목록 조회
+
+#### GET /external/app/me/reservation/waitlists
+
+내 예약 알림 대기 목록을 조회합니다.
+
+**인증**: 필요 (memberProtectedProcedure)
+
+**응답**:
+```json
+{
+  "vacancyWaitlist": [
+    {
+      "id": "330e8400-e29b-41d4-a716-446655440000",
+      "contentId": "660e8400-e29b-41d4-a716-446655440000",
+      "timeSlotId": "550e8400-e29b-41d4-a716-446655440000",
+      "createdAt": "2025-01-15T09:30:00.000Z"
+    }
+  ],
+  "openWaitlist": [
+    {
+      "id": "440e8400-e29b-41d4-a716-446655440000",
+      "contentId": "660e8400-e29b-41d4-a716-446655440000",
+      "createdAt": "2025-01-10T14:20:00.000Z"
+    }
+  ]
+}
+```
 
 ## Admin API (관리자용)
 
