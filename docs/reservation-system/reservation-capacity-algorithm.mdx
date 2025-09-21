@@ -138,6 +138,7 @@ const checkCapacity = async (
 interface CapacityCheckResult {
   strategy: 'SIMPLE_COUNT' | 'FFD_SIMULATION';
   sections: SectionResult[];
+  reservationCount: number;    // PENDING/CONFIRMED 예약 건수
 }
 
 interface SectionResult {
@@ -145,6 +146,7 @@ interface SectionResult {
   sectionName: string;
   canAccommodate: boolean;    // 예약 가능 여부
   availableCapacity: number;  // 남은 용량
+  minGroupSize: number;       // 최소 수용 가능 그룹 크기
   maxGroupSize: number;       // 최대 수용 가능 그룹 크기
   message?: string;
 }
@@ -172,6 +174,10 @@ if (!section.canAccommodate) {
 // 모든 섹션의 현재 가용 상태 확인 (추가 예약 없이)
 const capacityResult = await checkCapacity(slot.id, 0);
 
+// 예약 건수 (어드민 전용)
+const reservationCount = capacityResult.reservationCount;
+
+// 가용 용량 및 섹션 정보 (앱/어드민 공통)
 if (capacityResult.strategy === 'SIMPLE_COUNT') {
   // 단일 가상 섹션
   const section = capacityResult.sections[0];
@@ -182,10 +188,11 @@ if (capacityResult.strategy === 'SIMPLE_COUNT') {
     .filter(s => s.canAccommodate)
     .map(s => ({
       name: s.sectionName,
+      minCapacity: s.minGroupSize,  // 최소 인원 추가
       maxCapacity: s.maxGroupSize
     }));
 
-  // 전체 가용 인원 (모든 섹션 합계)
+  // 전체 가용 인원 (모든 셉션 합계)
   availableCapacity = capacityResult.sections
     .reduce((sum, s) => sum + s.availableCapacity, 0);
 }
@@ -199,16 +206,32 @@ if (capacityResult.strategy === 'SIMPLE_COUNT') {
 - 섹션 간 유닛 이동은 불가능합니다
 - 섹션별로 별도의 예약 용량을 관리합니다
 
-### availableCapacity의 의미
+### 주요 필드 설명
 
-현재 구현에서 `availableCapacity`는:
-- **사용되지 않은 유닛들의 총 용량**을 나타냅니다
-- 유닛이 부분적으로 사용되어도 전체가 사용된 것으로 계산됩니다
-- 따라서 실제 남은 자리보다 적게 표시될 수 있습니다
+#### availableCapacity의 의미
 
-**예시**:
-- 4인 테이블에 2명 배치 → remaining = 0 (실제로는 2자리 남음)
-- 이는 향후 개선이 필요한 부분입니다
+`availableCapacity`는 항상 **예약 가능한 인원수**를 나타냅니다:
+
+- **SIMPLE_COUNT 전략**: totalCapacity - 예약된 인원수
+- **FFD_SIMULATION 전략**: 사용 가능한 유닛들의 총 수용 인원수
+
+**주의사항**:
+- FFD_SIMULATION에서 유닛이 부분적으로 사용되어도 전체가 사용된 것으로 계산됩니다
+- 예: 4인 테이블에 2명 배치 → 해당 테이블의 remaining = 0 (실제로는 2자리 남았지만 사용 불가로 처리)
+- 따라서 `availableCapacity`는 실제 남은 자리보다 적게 표시될 수 있습니다
+
+#### reservationCount와의 차이
+
+- **reservationCount**: PENDING/CONFIRMED 상태의 예약 건수 (운영 지표)
+- **availableCapacity**: 실제 예약 가능한 용량 (사용자 정보)
+- 어드민에서는 두 값 모두 중요하지만, 앱에서는 주로 `availableCapacity`만 필요
+
+### 통합된 로직
+
+현재 앱과 어드민은 동일한 `checkCapacity` 함수를 사용하여 용량을 계산합니다:
+- 모든 전략(SIMPLE_COUNT, FFD_SIMULATION)에서 `availableSections` 제공
+- 어드민에서 추가 DB 쿼리 없이 `reservationCount` 획듍
+- 일관된 섹션별 정보 반환 (`minCapacity`, `maxCapacity` 포함)
 
 ### 향후 개선 방향
 

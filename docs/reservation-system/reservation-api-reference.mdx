@@ -2283,7 +2283,19 @@ enum ReservationHostKind {
         "name": "런치 코스"
       },
       "reservationCount": 5,
-      "availableCapacity": 35
+      "availableCapacity": 35,
+      "availableSections": [  // optional
+        {
+          "name": "메인 홀",
+          "minCapacity": 2,
+          "maxCapacity": 20
+        },
+        {
+          "name": "VIP 룸",
+          "minCapacity": 6,
+          "maxCapacity": 15
+        }
+      ]
     }
   ],
   "page": 1,
@@ -2292,6 +2304,16 @@ enum ReservationHostKind {
   "totalCount": 10
 }
 ```
+
+**필드 설명**:
+- `reservationCount`: 해당 타임슬롯의 PENDING/CONFIRMED 상태 예약 건수
+- `availableCapacity`: 예약 가능 인원수
+  - SIMPLE_COUNT 전략: totalCapacity - 예약된 인원수
+  - FFD_SIMULATION 전략: 사용 가능한 유닛들의 총 수용 인원수
+- `availableSections`: 섹션별 예약 가능 정보 (선택적)
+  - `name`: 섹션 이름
+  - `minCapacity`: 해당 섹션 최소 수용 인원
+  - `maxCapacity`: 해당 섹션 최대 수용 인원
 
 #### POST /external/admin/reservation/time-slot/create
 
