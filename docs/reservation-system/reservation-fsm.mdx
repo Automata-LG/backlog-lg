@@ -20,7 +20,7 @@ stateDiagram-v2
     PENDING --> PENDING: [사용자/관리자] 예약 변경<br/>(모든 확정 방식)<br/>USER_MODIFY_PENDING/ADMIN_MODIFY_PENDING
     
     CONFIRMED --> USED: [관리자] 예약 이용완료 처리<br/>ADMIN_MARK_USED<br/>[외부] QR 스캔<br/>SYSTEM_QR_VERIFY
-    CONFIRMED --> NOSHOW: [스케줄러] 자동 처리<br/>(사용일의 다음날 0시)<br/>SYSTEM_NOSHOW
+    CONFIRMED --> NOSHOW: [관리자] 노쇼 처리<br/>ADMIN_NOSHOW<br/>[스케줄러] 자동 처리<br/>(사용일의 다음날 0시)<br/>SYSTEM_NOSHOW
     CONFIRMED --> CANCELLED: [사용자/관리자] 예약 취소<br/>USER_CANCEL/ADMIN_CANCEL
     
     CONFIRMED --> PENDING: [사용자/관리자] 예약 변경<br/>(관리자 승인 방식, 추첨 방식)<br/>USER_MODIFY_TO_PENDING/ADMIN_MODIFY_TO_PENDING
@@ -68,6 +68,7 @@ export const ReservationStatusReasonCode = {
   // CONFIRMED→USED/NOSHOW
   ADMIN_MARK_USED: 'ADMIN_MARK_USED',               // 관리자 이용 완료 처리
   SYSTEM_QR_VERIFY: 'SYSTEM_QR_VERIFY',             // 시스템: QR 확인 완료
+  ADMIN_NOSHOW: 'ADMIN_NOSHOW',                     // 관리자: 노쇼 처리
   SYSTEM_NOSHOW: 'SYSTEM_NOSHOW',                   // 시스템: 자동 노쇼 처리
 
   // 이용 완료/노쇼 후 취소 (관리자만 가능)
@@ -138,7 +139,9 @@ stateDiagram-v2
 
 ### NOSHOW (노쇼)
 - **의미**: 예약 시간에 고객이 나타나지 않음
-- **진입 조건**: 사용일 다음날 0시 스케줄러가 자동 처리
+- **진입 조건**:
+  - 관리자가 수동으로 노쇼 처리
+  - 사용일 다음날 0시 스케줄러가 자동 처리
 - **다음 상태**: CANCELLED(관리자가 취소 가능)
 
 ### CANCELLED (취소)
