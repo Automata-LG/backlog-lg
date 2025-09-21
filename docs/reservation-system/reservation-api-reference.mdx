@@ -797,10 +797,12 @@ enum ReservationHostKind {
       "availableSections": [  // optional
         {
           "name": "메인 홀 A구역",
+          "minCapacity": 2,
           "maxCapacity": 20
         },
         {
           "name": "프라이빗 룸",
+          "minCapacity": 4,
           "maxCapacity": 8
         }
       ],
@@ -817,8 +819,13 @@ enum ReservationHostKind {
 ```
 
 **필드 설명**:
-- `availableCapacity`: 전체 예약 가능 인원 (totalCapacity - 예약된 인원)
-- `availableSections`: 예약 가능한 섹션과 각 섹션의 최대 수용 인원 (선택적, 섹션/유닛이 있는 경우만)
+- `availableCapacity`: 예약 가능 인원수
+  - SIMPLE_COUNT 전략: totalCapacity - 예약된 인원수
+  - FFD_SIMULATION 전략: 사용 가능한 유닛들의 총 수용 인원수
+- `availableSections`: 예약 가능한 섹션별 정보 (선택적, 섹션/유닛이 있는 경우만)
+  - `name`: 섹션 이름
+  - `minCapacity`: 해당 섹션 최소 수용 인원
+  - `maxCapacity`: 해당 섹션 최대 수용 인원
 - `isOpenForReservation`: 회원 등급 기준 현재 예약 가능 여부
 - `openStartAt`: 현재 회원 등급 기준 예약 오픈 시간
 - `openEndAt`: 예약 마감 시간
