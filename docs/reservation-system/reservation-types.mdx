@@ -357,6 +357,30 @@ export interface IReservationDetailedChanges {
     old: string;
     new: string;
   };
+
+  /** 예약 상태 변경 */
+  status?: {
+    old: ReservationStatus;
+    new: ReservationStatus;
+  };
+
+  /** 유닛 ID 변경 */
+  unitId?: {
+    old: string | null;
+    new: string | null;
+  };
+
+  /** 요청사항 변경 */
+  requestNote?: {
+    old: string | null;
+    new: string | null;
+  };
+
+  /** 추가정보 변경 */
+  additionalInfo?: {
+    old: any;
+    new: any;
+  };
 }
 ```
 

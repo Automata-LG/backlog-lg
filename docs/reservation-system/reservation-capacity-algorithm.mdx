@@ -243,6 +243,42 @@ if (capacityResult.strategy === 'SIMPLE_COUNT') {
 - `totalCapacity`는 섹션의 총 수용 가능 인원을 나타냅니다
 - `availableCapacity`는 해당 섹션 내에서 현재 예약 가능한 인원을 나타냅니다
 
+### 강제 할당 (Force Assignment)
+
+어드민은 유닛의 용량 제한을 무시하고 강제로 예약을 할당할 수 있습니다:
+
+#### 강제 할당 동작 방식
+
+- **일반 할당**: 유닛의 minCapacity ≤ groupSize ≤ maxCapacity 검증
+- **강제 할당**: `isForced: true` 옵션으로 용량 검증 건너뜀
+- **예시**: 4인 테이블(maxCapacity=4)에 6명 그룹 강제 배정 가능
+
+#### 통계 영향
+
+**예약 목록 통계 (calculateReservationStats)**:
+- 실제 groupSize로 집계 (예: 6명으로 기록)
+- SIMPLE_COUNT, FFD_SIMULATION 전략 모두 동일하게 적용
+
+**타임슬롯 가용성 (checkCapacity)**:
+- **FFD_SIMULATION**: 유닛 점유 상태만 확인, 실제 인원수와 무관
+  - 4인 테이블이 6명에게 할당되어도 → 유닛은 "점유됨"으로 처리
+  - 남은 테이블의 availableCapacity는 정확히 계산
+- **SIMPLE_COUNT**: totalCapacity - 예약된 인원수로 계산
+  - 강제 할당된 초과 인원도 포함되어 계산
+
+#### 실제 시나리오
+
+```
+상황: 4인 테이블 3개 (총 12명 수용 가능)
+강제 할당: 테이블1에 6명 배정
+결과:
+- 예약 통계: 6명 서비스 중
+- 가용 용량: 8명 (남은 테이블 2개 × 4인)
+- 실제 의미: 6명을 수용했고, 추가로 8명까지 예약 가능
+```
+
+이러한 비대칭성은 의도된 설계로, 실제 서비스한 인원(통계)과 예약 가능 인원(가용성)을 각각 정확히 추적합니다.
+
 ### 향후 개선 방향
 
 1. **부분 사용 지원**: 유닛의 부분적 사용 추적
