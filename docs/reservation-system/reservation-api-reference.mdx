@@ -2306,17 +2306,21 @@ enum ReservationHostKind {
       "availableSections": [  // optional
         {
           "name": "메인 홀",
+          "totalCapacity": 60,
           "minGroupSize": 2,
           "maxGroupSize": 20,
-          "availableUnits": 4,
-          "totalUnits": 6
+          "availableCapacity": 40,
+          "totalUnits": 6,
+          "availableUnits": 4
         },
         {
           "name": "VIP 룸",
+          "totalCapacity": 30,
           "minGroupSize": 6,
           "maxGroupSize": 15,
-          "availableUnits": 2,
-          "totalUnits": 3
+          "availableCapacity": 20,
+          "totalUnits": 3,
+          "availableUnits": 2
         }
       ]
     }
@@ -2335,10 +2339,12 @@ enum ReservationHostKind {
   - FFD_SIMULATION 전략: 사용 가능한 유닛들의 총 수용 인원수
 - `availableSections`: 섹션별 예약 가능 정보 (선택적)
   - `name`: 섹션 이름
+  - `totalCapacity`: 섹션의 총 수용 가능 인원
   - `minGroupSize`: 해당 섹션에서 예약 가능한 최소 그룹 크기
-  - `maxGroupSize`: 해당 셉션에서 예약 가능한 최대 그룹 크기
-  - `availableUnits`: 가용 유닛 수
+  - `maxGroupSize`: 해당 섹션에서 예약 가능한 최대 그룹 크기
+  - `availableCapacity`: 섹션의 현재 예약 가능 인원
   - `totalUnits`: 전체 유닛 수
+  - `availableUnits`: 가용 유닛 수
 
 #### POST /external/admin/reservation/time-slot/create
 
