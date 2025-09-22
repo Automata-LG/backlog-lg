@@ -797,17 +797,21 @@ enum ReservationHostKind {
       "availableSections": [  // optional
         {
           "name": "메인 홀 A구역",
+          "totalCapacity": 40,
           "minGroupSize": 2,
           "maxGroupSize": 20,
-          "availableUnits": 3,
-          "totalUnits": 5
+          "availableCapacity": 24,
+          "totalUnits": 5,
+          "availableUnits": 3
         },
         {
           "name": "프라이빗 룸",
+          "totalCapacity": 16,
           "minGroupSize": 4,
           "maxGroupSize": 8,
-          "availableUnits": 1,
-          "totalUnits": 2
+          "availableCapacity": 8,
+          "totalUnits": 2,
+          "availableUnits": 1
         }
       ],
       "isOpenForReservation": true,
@@ -828,10 +832,12 @@ enum ReservationHostKind {
   - FFD_SIMULATION 전략: 사용 가능한 유닛들의 총 수용 인원수
 - `availableSections`: 예약 가능한 섹션별 정보 (선택적, 섹션/유닛이 있는 경우만)
   - `name`: 섹션 이름
+  - `totalCapacity`: 섹션의 총 수용 가능 인원
   - `minGroupSize`: 해당 섹션에서 예약 가능한 최소 그룹 크기
   - `maxGroupSize`: 해당 섹션에서 예약 가능한 최대 그룹 크기
-  - `availableUnits`: 가용 유닛 수
+  - `availableCapacity`: 섹션의 현재 예약 가능 인원
   - `totalUnits`: 전체 유닛 수
+  - `availableUnits`: 가용 유닛 수
 - `isOpenForReservation`: 회원 등급 기준 현재 예약 가능 여부
 - `openStartAt`: 현재 회원 등급 기준 예약 오픈 시간
 - `openEndAt`: 예약 마감 시간

@@ -145,11 +145,12 @@ interface SectionResult {
   sectionId: string;
   sectionName: string;
   canAccommodate: boolean;    // 예약 가능 여부
-  availableCapacity: number;  // 남은 용량
+  totalCapacity: number;      // 총 수용 가능 인원
   minGroupSize: number;       // 최소 수용 가능 그룹 크기
   maxGroupSize: number;       // 최대 수용 가능 그룹 크기
-  availableUnits: number;     // 가용 유닛 수
+  availableCapacity: number;  // 남은 용량
   totalUnits: number;         // 전체 유닛 수
+  availableUnits: number;     // 가용 유닛 수
   message?: string;
 }
 ```
@@ -190,10 +191,12 @@ if (capacityResult.strategy === 'SIMPLE_COUNT') {
     .filter(s => s.canAccommodate)
     .map(s => ({
       name: s.sectionName,
+      totalCapacity: s.totalCapacity,  // 총 수용 가능 인원
       minGroupSize: s.minGroupSize,  // 최소 예약 가능 그룹 크기
       maxGroupSize: s.maxGroupSize,  // 최대 예약 가능 그룹 크기
-      availableUnits: s.availableUnits,  // 가용 유닛 수
-      totalUnits: s.totalUnits  // 전체 유닛 수
+      availableCapacity: s.availableCapacity,  // 남은 용량
+      totalUnits: s.totalUnits,  // 전체 유닛 수
+      availableUnits: s.availableUnits  // 가용 유닛 수
     }));
 
   // 전체 가용 인원 (모든 셉션 합계)
@@ -237,6 +240,8 @@ if (capacityResult.strategy === 'SIMPLE_COUNT') {
 - 어드민에서 추가 DB 쿼리 없이 `reservationCount` 획득
 - 일관된 섹션별 정보 반환 (`minGroupSize`, `maxGroupSize`, `availableUnits`, `totalUnits` 포함)
 - SIMPLE_COUNT 전략에서는 유닛이 없으므로 `availableUnits`와 `totalUnits`가 0으로 설정됨
+- `totalCapacity`는 섹션의 총 수용 가능 인원을 나타냅니다
+- `availableCapacity`는 해당 섹션 내에서 현재 예약 가능한 인원을 나타냅니다
 
 ### 향후 개선 방향
 
