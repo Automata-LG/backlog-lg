@@ -29,6 +29,7 @@
               "reservation-system/reservation-capacity-algorithm",
               "reservation-system/reservation-operation-guidelines",
               "reservation-system/reservation-api-reference",
+              "reservation-system/notification-integration",
               "reservation-system/sks-restaurant-raw",
               "reservation-system/sks-restaurant-prd",
               "reservation-system/sks-restaurant-integration",
