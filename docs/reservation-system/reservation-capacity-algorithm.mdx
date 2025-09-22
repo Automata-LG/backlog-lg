@@ -234,7 +234,7 @@ if (capacityResult.strategy === 'SIMPLE_COUNT') {
 
 현재 앱과 어드민은 동일한 `checkCapacity` 함수를 사용하여 용량을 계산합니다:
 - 모든 전략(SIMPLE_COUNT, FFD_SIMULATION)에서 `availableSections` 제공
-- 어드민에서 추가 DB 쿼리 없이 `reservationCount` 획듍
+- 어드민에서 추가 DB 쿼리 없이 `reservationCount` 획득
 - 일관된 섹션별 정보 반환 (`minGroupSize`, `maxGroupSize`, `availableUnits`, `totalUnits` 포함)
 - SIMPLE_COUNT 전략에서는 유닛이 없으므로 `availableUnits`와 `totalUnits`가 0으로 설정됨
 
