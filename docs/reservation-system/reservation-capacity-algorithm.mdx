@@ -148,6 +148,8 @@ interface SectionResult {
   availableCapacity: number;  // 남은 용량
   minGroupSize: number;       // 최소 수용 가능 그룹 크기
   maxGroupSize: number;       // 최대 수용 가능 그룹 크기
+  availableUnits: number;     // 가용 유닛 수
+  totalUnits: number;         // 전체 유닛 수
   message?: string;
 }
 ```
@@ -188,8 +190,10 @@ if (capacityResult.strategy === 'SIMPLE_COUNT') {
     .filter(s => s.canAccommodate)
     .map(s => ({
       name: s.sectionName,
-      minCapacity: s.minGroupSize,  // 최소 인원 추가
-      maxCapacity: s.maxGroupSize
+      minGroupSize: s.minGroupSize,  // 최소 예약 가능 그룹 크기
+      maxGroupSize: s.maxGroupSize,  // 최대 예약 가능 그룹 크기
+      availableUnits: s.availableUnits,  // 가용 유닛 수
+      totalUnits: s.totalUnits  // 전체 유닛 수
     }));
 
   // 전체 가용 인원 (모든 셉션 합계)
@@ -231,7 +235,8 @@ if (capacityResult.strategy === 'SIMPLE_COUNT') {
 현재 앱과 어드민은 동일한 `checkCapacity` 함수를 사용하여 용량을 계산합니다:
 - 모든 전략(SIMPLE_COUNT, FFD_SIMULATION)에서 `availableSections` 제공
 - 어드민에서 추가 DB 쿼리 없이 `reservationCount` 획듍
-- 일관된 섹션별 정보 반환 (`minCapacity`, `maxCapacity` 포함)
+- 일관된 섹션별 정보 반환 (`minGroupSize`, `maxGroupSize`, `availableUnits`, `totalUnits` 포함)
+- SIMPLE_COUNT 전략에서는 유닛이 없으므로 `availableUnits`와 `totalUnits`가 0으로 설정됨
 
 ### 향후 개선 방향
 

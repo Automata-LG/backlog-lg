@@ -797,13 +797,17 @@ enum ReservationHostKind {
       "availableSections": [  // optional
         {
           "name": "메인 홀 A구역",
-          "minCapacity": 2,
-          "maxCapacity": 20
+          "minGroupSize": 2,
+          "maxGroupSize": 20,
+          "availableUnits": 3,
+          "totalUnits": 5
         },
         {
           "name": "프라이빗 룸",
-          "minCapacity": 4,
-          "maxCapacity": 8
+          "minGroupSize": 4,
+          "maxGroupSize": 8,
+          "availableUnits": 1,
+          "totalUnits": 2
         }
       ],
       "isOpenForReservation": true,
@@ -824,8 +828,10 @@ enum ReservationHostKind {
   - FFD_SIMULATION 전략: 사용 가능한 유닛들의 총 수용 인원수
 - `availableSections`: 예약 가능한 섹션별 정보 (선택적, 섹션/유닛이 있는 경우만)
   - `name`: 섹션 이름
-  - `minCapacity`: 해당 섹션 최소 수용 인원
-  - `maxCapacity`: 해당 섹션 최대 수용 인원
+  - `minGroupSize`: 해당 섹션에서 예약 가능한 최소 그룹 크기
+  - `maxGroupSize`: 해당 섹션에서 예약 가능한 최대 그룹 크기
+  - `availableUnits`: 가용 유닛 수
+  - `totalUnits`: 전체 유닛 수
 - `isOpenForReservation`: 회원 등급 기준 현재 예약 가능 여부
 - `openStartAt`: 현재 회원 등급 기준 예약 오픈 시간
 - `openEndAt`: 예약 마감 시간
@@ -2294,13 +2300,17 @@ enum ReservationHostKind {
       "availableSections": [  // optional
         {
           "name": "메인 홀",
-          "minCapacity": 2,
-          "maxCapacity": 20
+          "minGroupSize": 2,
+          "maxGroupSize": 20,
+          "availableUnits": 4,
+          "totalUnits": 6
         },
         {
           "name": "VIP 룸",
-          "minCapacity": 6,
-          "maxCapacity": 15
+          "minGroupSize": 6,
+          "maxGroupSize": 15,
+          "availableUnits": 2,
+          "totalUnits": 3
         }
       ]
     }
@@ -2319,8 +2329,10 @@ enum ReservationHostKind {
   - FFD_SIMULATION 전략: 사용 가능한 유닛들의 총 수용 인원수
 - `availableSections`: 섹션별 예약 가능 정보 (선택적)
   - `name`: 섹션 이름
-  - `minCapacity`: 해당 섹션 최소 수용 인원
-  - `maxCapacity`: 해당 섹션 최대 수용 인원
+  - `minGroupSize`: 해당 섹션에서 예약 가능한 최소 그룹 크기
+  - `maxGroupSize`: 해당 셉션에서 예약 가능한 최대 그룹 크기
+  - `availableUnits`: 가용 유닛 수
+  - `totalUnits`: 전체 유닛 수
 
 #### POST /external/admin/reservation/time-slot/create
 
@@ -2597,59 +2609,7 @@ enum ReservationHostKind {
         "confirmationRate": 60.0,
         "utilizationRate": 0.0,
         "cancellationRate": 11.1,
-        "noshowRate": 0.0,
-        "sectionBreakdown": [  // [선택] 섹션이 있는 경우에만 포함
-          {
-            "sectionId": "770e8400-e29b-41d4-a716-446655440000",
-            "sectionName": "메인 홀",
-            "totalCapacity": 60,
-            "availableCapacity": 10,
-            "pendingCount": 6,
-            "confirmedCount": 20,
-            "cancelledCount": 3,
-            "usedCount": 0,
-            "noshowCount": 0,
-            "totalPendingSize": 12,
-            "totalConfirmedSize": 40,
-            "totalCancelledSize": 6,
-            "totalUsedSize": 0,
-            "totalNoshowSize": 0,
-            "actualReservedSize": 52,
-            "actualConfirmedSize": 40,
-            "actualCancelledSize": 6,
-            "reservationRate": 86.7,
-            "confirmationRate": 66.7,
-            "utilizationRate": 0.0,
-            "cancellationRate": 10.3,
-            "noshowRate": 0.0
-          }
-        ]
-      }
-    ],
-    "sectionBreakdown": [  // [선택] 전체 기간 섹션별 통계 (섹션이 있는 경우에만 포함)
-      {
-        "sectionId": "770e8400-e29b-41d4-a716-446655440000",
-        "sectionName": "메인 홀",
-        "totalCapacity": 600,
-        "availableCapacity": 100,
-        "pendingCount": 30,
-        "confirmedCount": 120,
-        "cancelledCount": 18,
-        "usedCount": 90,
-        "noshowCount": 10,
-        "totalPendingSize": 60,
-        "totalConfirmedSize": 240,
-        "totalCancelledSize": 36,
-        "totalUsedSize": 180,
-        "totalNoshowSize": 20,
-        "actualReservedSize": 500,
-        "actualConfirmedSize": 440,
-        "actualCancelledSize": 36,
-        "reservationRate": 83.3,
-        "confirmationRate": 73.3,
-        "utilizationRate": 40.9,
-        "cancellationRate": 6.7,
-        "noshowRate": 4.5
+        "noshowRate": 0.0
       }
     ]
   }
