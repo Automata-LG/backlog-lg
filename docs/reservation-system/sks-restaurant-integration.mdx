@@ -270,6 +270,12 @@ interface IReservationDetailedChanges {
   phoneNumber?: { old: string, new: string };
   status?: { old: ReservationStatus, new: ReservationStatus };
 
+  // 유닛 변경 추적
+  unitId?: {
+    old: string | null;
+    new: string | null;
+  };
+
   // 일반화된 필드 추가
   requestNote?: {
     old: string | null;
