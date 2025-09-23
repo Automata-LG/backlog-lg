@@ -27,19 +27,19 @@ graph LR
 #### 발송 조건
 - **시점**: 예약이 확정 상태로 변경되는 즉시
 - **대상**: 예약 당사자
-- **채널**: 푸시, 카카오 알림톡
+- **채널**: iOS 푸시, Android 푸시, 카카오 알림톡
 - **템플릿 코드**: (미정)
 
 #### 기본 템플릿
 ```
-안녕하세요, {{이름}} 고객님. LG전자입니다.
+안녕하세요, {{!이름}} 고객님. LG전자입니다.
 SKS Dining 예약이 확정되었습니다.
 
-[날짜]: {{연도}}년 {{월}}월 {{일}}일
-[시간]: {{시}}시 {{분}}분
-[인원]: {{인원수}}명
-[타입]: {{홀/룸}}
-[예약 유형]: {{다이닝/음료}}
+[날짜]: {{!연도}}년 {{!월}}월 {{!일}}일
+[시간]: {{!시}}시 {{!분}}분
+[인원]: {{!인원수}}명
+[타입]: {{!홀/룸}}
+[예약 유형]: {{!다이닝/음료}}
 
 예약 내역은 LG전자 멤버십 앱에서도 확인 가능합니다.
 예약해 주셔서 감사합니다.
@@ -71,41 +71,43 @@ LG전자 멤버십 앱
   "event_key": "reservation.confirmed",
   "name": "SKS Dining 예약 확정",
   "data_schema": {
-    "이름": { "type": "string", "required": true },
-    "연도": { "type": "string", "required": true },
-    "월": { "type": "string", "required": true },
-    "일": { "type": "string", "required": true },
-    "시": { "type": "string", "required": true },
-    "분": { "type": "string", "required": true },
-    "인원수": { "type": "string", "required": true },
-    "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
-    "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    "variables": {
+      "이름": { "type": "string", "required": true },
+      "연도": { "type": "string", "required": true },
+      "월": { "type": "string", "required": true },
+      "일": { "type": "string", "required": true },
+      "시": { "type": "string", "required": true },
+      "분": { "type": "string", "required": true },
+      "인원수": { "type": "string", "required": true },
+      "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
+      "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    }
   },
   "default_delay": 0,
-  "channel_types": ["push", "kakao"]
+  "target_subscription_types": ["ios_push", "android_push", "kakao"]
 }
 ```
 
 ---
 
-### 2. SKS Dining 예약 리마인더 D-1 (`reservation.reminder.d1`)
+### 2. SKS Dining 예약 리마인더 D-1 (`reservation.reminder_d1`)
 
 #### 발송 조건
 - **시점**: 이용일 D-1 오전 10시
 - **대상**: 예약 당사자
-- **채널**: 푸시, 카카오 알림톡
+- **채널**: iOS 푸시, Android 푸시, 카카오 알림톡
 - **템플릿 코드**: 11708
 
 #### 기본 템플릿
 ```
-안녕하세요, {{이름}} 고객님. LG전자입니다.
+안녕하세요, {{!이름}} 고객님. LG전자입니다.
 SKS Dining에서 예약 1일 전 최종 안내 드립니다.
 
-[날짜]: {{연도}}년 {{월}}월 {{일}}일
-[시간]: {{시}}시 {{분}}분
-[인원]: {{인원수}}명
-[타입]: {{홀/룸}}
-[예약 유형]: {{다이닝/음료}}
+[날짜]: {{!연도}}년 {{!월}}월 {{!일}}일
+[시간]: {{!시}}시 {{!분}}분
+[인원]: {{!인원수}}명
+[타입]: {{!홀/룸}}
+[예약 유형]: {{!다이닝/음료}}
 
 예약 내역은 LG전자 멤버십 앱에서도 확인 가능합니다.
 예약해 주셔서 감사합니다.
@@ -117,7 +119,6 @@ LG전자 멤버십 앱
 #### 알림톡 특화 템플릿
 ```json
 {
-  "template_code": "11708",
   "title": "SKS Dining 예약 전 안내",
   "message": "(기본 템플릿 내용)"
 }
@@ -134,45 +135,46 @@ LG전자 멤버십 앱
 #### SystemEvent 설정
 ```json
 {
-  "event_key": "reservation.reminder.d1",
+  "event_key": "reservation.reminder_d1",
   "name": "SKS Dining 예약 리마인더 D-1",
-  "template_code": "11708",
   "data_schema": {
-    "이름": { "type": "string", "required": true },
-    "연도": { "type": "string", "required": true },
-    "월": { "type": "string", "required": true },
-    "일": { "type": "string", "required": true },
-    "시": { "type": "string", "required": true },
-    "분": { "type": "string", "required": true },
-    "인원수": { "type": "string", "required": true },
-    "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
-    "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    "variables": {
+      "이름": { "type": "string", "required": true },
+      "연도": { "type": "string", "required": true },
+      "월": { "type": "string", "required": true },
+      "일": { "type": "string", "required": true },
+      "시": { "type": "string", "required": true },
+      "분": { "type": "string", "required": true },
+      "인원수": { "type": "string", "required": true },
+      "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
+      "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    }
   },
   "default_delay": 0,
-  "channel_types": ["push", "kakao"]
+  "target_subscription_types": ["ios_push", "android_push", "kakao"]
 }
 ```
 
 ---
 
-### 3. SKS Dining 예약 리마인더 D-0 (`reservation.reminder.d0`)
+### 3. SKS Dining 예약 리마인더 D-0 (`reservation.reminder_d0`)
 
 #### 발송 조건
 - **시점**: 이용일 당일 오전 10시
 - **대상**: 예약 당사자
-- **채널**: 푸시, 카카오 알림톡
+- **채널**: iOS 푸시, Android 푸시, 카카오 알림톡
 - **템플릿 코드**: 11709
 
 #### 기본 템플릿
 ```
-안녕하세요, {{이름}} 고객님. LG전자입니다.
+안녕하세요, {{!이름}} 고객님. LG전자입니다.
 오늘은 SKS Dining 방문 당일입니다.
 
-[날짜]: {{연도}}년 {{월}}월 {{일}}일
-[시간]: {{시}}시 {{분}}분
-[인원]: {{인원수}}명
-[타입]: {{홀/룸}}
-[예약 유형]: {{다이닝/음료}}
+[날짜]: {{!연도}}년 {{!월}}월 {{!일}}일
+[시간]: {{!시}}시 {{!분}}분
+[인원]: {{!인원수}}명
+[타입]: {{!홀/룸}}
+[예약 유형]: {{!다이닝/음료}}
 
 *쇼룸투어를 예약하신 고객님께서는 예약 시간부터 30분간 쇼룸투어가 진행되며, 이후 다이닝이 이어집니다.
 예) 12:00 예약 시, 12:00~12:30 쇼룸투어
@@ -188,7 +190,6 @@ LG전자 멤버십 앱
 #### 알림톡 특화 템플릿
 ```json
 {
-  "template_code": "11709",
   "title": "SKS Dining 방문 당일 안내",
   "message": "(기본 템플릿 내용)",
   "buttons": [
@@ -211,45 +212,46 @@ LG전자 멤버십 앱
 #### SystemEvent 설정
 ```json
 {
-  "event_key": "reservation.reminder.d0",
+  "event_key": "reservation.reminder_d0",
   "name": "SKS Dining 예약 리마인더 D-0",
-  "template_code": "11709",
   "data_schema": {
-    "이름": { "type": "string", "required": true },
-    "연도": { "type": "string", "required": true },
-    "월": { "type": "string", "required": true },
-    "일": { "type": "string", "required": true },
-    "시": { "type": "string", "required": true },
-    "분": { "type": "string", "required": true },
-    "인원수": { "type": "string", "required": true },
-    "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
-    "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    "variables": {
+      "이름": { "type": "string", "required": true },
+      "연도": { "type": "string", "required": true },
+      "월": { "type": "string", "required": true },
+      "일": { "type": "string", "required": true },
+      "시": { "type": "string", "required": true },
+      "분": { "type": "string", "required": true },
+      "인원수": { "type": "string", "required": true },
+      "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
+      "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    }
   },
   "default_delay": 0,
-  "channel_types": ["push", "kakao"]
+  "target_subscription_types": ["ios_push", "android_push", "kakao"]
 }
 ```
 
 ---
 
-### 4. SKS Dining 예약 취소 - 고객 (`reservation.cancelled.user`)
+### 4. SKS Dining 예약 취소 - 고객 (`reservation.cancelled_user`)
 
 #### 발송 조건
 - **시점**: 고객이 예약을 취소한 즉시
 - **대상**: 예약 당사자
-- **채널**: 푸시, 카카오 알림톡
+- **채널**: iOS 푸시, Android 푸시, 카카오 알림톡
 - **템플릿 코드**: 11711
 
 #### 기본 템플릿
 ```
-안녕하세요, {{이름}} 고객님. LG전자입니다.
+안녕하세요, {{!이름}} 고객님. LG전자입니다.
 SKS Dining 예약이 취소되었음을 안내드립니다.
 
-[날짜]: {{연도}}년 {{월}}월 {{일}}일
-[시간]: {{시}}시 {{분}}분
-[인원]: {{인원수}}명
-[타입]: {{홀/룸}}
-[예약 유형]: {{다이닝/음료}}
+[날짜]: {{!연도}}년 {{!월}}월 {{!일}}일
+[시간]: {{!시}}시 {{!분}}분
+[인원]: {{!인원수}}명
+[타입]: {{!홀/룸}}
+[예약 유형]: {{!다이닝/음료}}
 
 예약 취소 내역은 LG전자 멤버십 앱에서도 확인 가능합니다.
 감사합니다.
@@ -266,7 +268,6 @@ LG전자 멤버십 앱
 #### 알림톡 특화 템플릿
 ```json
 {
-  "template_code": "11711",
   "title": "SKS Dining 예약 취소 알림",
   "message": "(기본 템플릿 내용)",
   "buttons": [
@@ -289,47 +290,48 @@ LG전자 멤버십 앱
 #### SystemEvent 설정
 ```json
 {
-  "event_key": "reservation.cancelled.user",
+  "event_key": "reservation.cancelled_user",
   "name": "SKS Dining 예약 취소 - 고객",
-  "template_code": "11711",
   "data_schema": {
-    "이름": { "type": "string", "required": true },
-    "연도": { "type": "string", "required": true },
-    "월": { "type": "string", "required": true },
-    "일": { "type": "string", "required": true },
-    "시": { "type": "string", "required": true },
-    "분": { "type": "string", "required": true },
-    "인원수": { "type": "string", "required": true },
-    "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
-    "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    "variables": {
+      "이름": { "type": "string", "required": true },
+      "연도": { "type": "string", "required": true },
+      "월": { "type": "string", "required": true },
+      "일": { "type": "string", "required": true },
+      "시": { "type": "string", "required": true },
+      "분": { "type": "string", "required": true },
+      "인원수": { "type": "string", "required": true },
+      "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
+      "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    }
   },
   "default_delay": 0,
-  "channel_types": ["push", "kakao"]
+  "target_subscription_types": ["ios_push", "android_push", "kakao"]
 }
 ```
 
 ---
 
-### 5. SKS Dining 예약 취소 - 관리자 (`reservation.cancelled.admin`)
+### 5. SKS Dining 예약 취소 - 관리자 (`reservation.cancelled_admin`)
 
 #### 발송 조건
 - **시점**: 관리자가 예약을 취소한 즉시
 - **대상**: 예약 당사자
-- **채널**: 푸시, 카카오 알림톡
+- **채널**: iOS 푸시, Android 푸시, 카카오 알림톡
 - **템플릿 코드**: 11713
 
 #### 기본 템플릿
 ```
-안녕하세요, {{이름}} 고객님. LG전자입니다.
+안녕하세요, {{!이름}} 고객님. LG전자입니다.
 SKS Dining 예약이 관리자에 의해 취소되었음을 안내드립니다.
 
-[날짜]: {{연도}}년 {{월}}월 {{일}}일
-[시간]: {{시}}시 {{분}}분
-[인원]: {{인원수}}명
-[타입]: {{홀/룸}}
-[예약 유형]: {{다이닝/음료}}
+[날짜]: {{!연도}}년 {{!월}}월 {{!일}}일
+[시간]: {{!시}}시 {{!분}}분
+[인원]: {{!인원수}}명
+[타입]: {{!홀/룸}}
+[예약 유형]: {{!다이닝/음료}}
 
-예약 취소 관련 상세 문의는 {{번호}}로 부탁드립니다.
+예약 취소 관련 상세 문의는 {{!번호}}로 부탁드립니다.
 
 LG전자 멤버십 앱
 -> https://freed.onelink.me/vF8T/7bmtbibt?deep_link_value=/index.html
@@ -338,7 +340,6 @@ LG전자 멤버십 앱
 #### 알림톡 특화 템플릿
 ```json
 {
-  "template_code": "11713",
   "title": "SKS Dining 예약 취소 알림 (관리자)",
   "message": "(기본 템플릿 내용)"
 }
@@ -355,23 +356,24 @@ LG전자 멤버십 앱
 #### SystemEvent 설정
 ```json
 {
-  "event_key": "reservation.cancelled.admin",
+  "event_key": "reservation.cancelled_admin",
   "name": "SKS Dining 예약 취소 - 관리자",
-  "template_code": "11713",
   "data_schema": {
-    "이름": { "type": "string", "required": true },
-    "연도": { "type": "string", "required": true },
-    "월": { "type": "string", "required": true },
-    "일": { "type": "string", "required": true },
-    "시": { "type": "string", "required": true },
-    "분": { "type": "string", "required": true },
-    "인원수": { "type": "string", "required": true },
-    "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
-    "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] },
-    "번호": { "type": "string", "required": true }
+    "variables": {
+      "이름": { "type": "string", "required": true },
+      "연도": { "type": "string", "required": true },
+      "월": { "type": "string", "required": true },
+      "일": { "type": "string", "required": true },
+      "시": { "type": "string", "required": true },
+      "분": { "type": "string", "required": true },
+      "인원수": { "type": "string", "required": true },
+      "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
+      "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] },
+      "번호": { "type": "string", "required": true }
+    }
   },
   "default_delay": 0,
-  "channel_types": ["push", "kakao"]
+  "target_subscription_types": ["ios_push", "android_push", "kakao"]
 }
 ```
 
@@ -382,20 +384,20 @@ LG전자 멤버십 앱
 #### 발송 조건
 - **시점**: 예약이 변경된 즉시
 - **대상**: 예약 당사자
-- **채널**: 푸시, 카카오 알림톡
+- **채널**: iOS 푸시, Android 푸시, 카카오 알림톡
 - **템플릿 코드**: 11712
 
 #### 기본 템플릿
 ```
-안녕하세요, {{이름}} 고객님, LG전자입니다.
+안녕하세요, {{!이름}} 고객님, LG전자입니다.
 SKS Dining의 예약이 변경되었습니다.
 변경된 예약 내용을 확인해 주세요.
 
-[날짜]: {{연도}}년 {{월}}월 {{일}}일
-[시간]: {{시}}시 {{분}}분
-[인원]: {{인원수}}명
-[타입]: {{홀/룸}}
-[예약 유형]: {{다이닝/음료}}
+[날짜]: {{!연도}}년 {{!월}}월 {{!일}}일
+[시간]: {{!시}}시 {{!분}}분
+[인원]: {{!인원수}}명
+[타입]: {{!홀/룸}}
+[예약 유형]: {{!다이닝/음료}}
 
 예약 변경 내역은 LG전자 멤버십 앱에서도 확인 가능합니다.
 감사합니다.
@@ -407,7 +409,6 @@ LG전자 멤버십 앱
 #### 알림톡 특화 템플릿
 ```json
 {
-  "template_code": "11712",
   "title": "SKS Dining 예약 변경",
   "message": "(기본 템플릿 내용)"
 }
@@ -426,20 +427,21 @@ LG전자 멤버십 앱
 {
   "event_key": "reservation.changed",
   "name": "SKS Dining 예약 변경",
-  "template_code": "11712",
   "data_schema": {
-    "이름": { "type": "string", "required": true },
-    "연도": { "type": "string", "required": true },
-    "월": { "type": "string", "required": true },
-    "일": { "type": "string", "required": true },
-    "시": { "type": "string", "required": true },
-    "분": { "type": "string", "required": true },
-    "인원수": { "type": "string", "required": true },
-    "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
-    "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    "variables": {
+      "이름": { "type": "string", "required": true },
+      "연도": { "type": "string", "required": true },
+      "월": { "type": "string", "required": true },
+      "일": { "type": "string", "required": true },
+      "시": { "type": "string", "required": true },
+      "분": { "type": "string", "required": true },
+      "인원수": { "type": "string", "required": true },
+      "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
+      "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    }
   },
   "default_delay": 0,
-  "channel_types": ["push", "kakao"]
+  "target_subscription_types": ["ios_push", "android_push", "kakao"]
 }
 ```
 
@@ -450,19 +452,19 @@ LG전자 멤버십 앱
 #### 발송 조건
 - **시점**: 예약 취소 시 (이용시간 3시간 전 취소인 경우만)
 - **대상**: 해당 일자 빈자리 알림 신청 고객들
-- **채널**: 푸시, 카카오 알림톡
+- **채널**: iOS 푸시, Android 푸시, 카카오 알림톡
 - **템플릿 코드**: 11710
 
 #### 기본 템플릿
 ```
-안녕하세요, {{이름}} 고객님, LG전자입니다.
+안녕하세요, {{!이름}} 고객님, LG전자입니다.
 예약 대기를 하신 SKS Dining에 빈자리가 생겨 안내드립니다.
 
-[날짜]: {{연도}}년 {{월}}월 {{일}}일
-[시간]: {{시}}시 {{분}}분
-[인원]: {{인원수}}명
-[타입]: {{홀/룸}}
-[예약 유형]: {{다이닝/음료}}
+[날짜]: {{!연도}}년 {{!월}}월 {{!일}}일
+[시간]: {{!시}}시 {{!분}}분
+[인원]: {{!인원수}}명
+[타입]: {{!홀/룸}}
+[예약 유형]: {{!다이닝/음료}}
 
 [유의사항]
 *선착순으로 예약이 이루어지므로, 빠른 시간 내에 예약해 주세요.
@@ -475,7 +477,6 @@ LG전자 멤버십 앱
 #### 알림톡 특화 템플릿
 ```json
 {
-  "template_code": "11710",
   "title": "SKS Dining 빈자리 알림",
   "message": "(기본 템플릿 내용)"
 }
@@ -494,20 +495,21 @@ LG전자 멤버십 앱
 {
   "event_key": "reservation.vacancy",
   "name": "SKS Dining 빈자리 발생",
-  "template_code": "11710",
   "data_schema": {
-    "이름": { "type": "string", "required": true },
-    "연도": { "type": "string", "required": true },
-    "월": { "type": "string", "required": true },
-    "일": { "type": "string", "required": true },
-    "시": { "type": "string", "required": true },
-    "분": { "type": "string", "required": true },
-    "인원수": { "type": "string", "required": true },
-    "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
-    "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    "variables": {
+      "이름": { "type": "string", "required": true },
+      "연도": { "type": "string", "required": true },
+      "월": { "type": "string", "required": true },
+      "일": { "type": "string", "required": true },
+      "시": { "type": "string", "required": true },
+      "분": { "type": "string", "required": true },
+      "인원수": { "type": "string", "required": true },
+      "홀/룸": { "type": "string", "required": true, "enum": ["홀", "룸"] },
+      "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    }
   },
   "default_delay": 0,
-  "channel_types": ["push", "kakao"]
+  "target_subscription_types": ["ios_push", "android_push", "kakao"]
 }
 ```
 
@@ -518,16 +520,16 @@ LG전자 멤버십 앱
 #### 발송 조건
 - **시점**: 새로운 예약 슬롯이 오픈되는 시점
 - **대상**: 예약 오픈 알림 신청 고객들
-- **채널**: 푸시
+- **채널**: iOS 푸시, Android 푸시
 
 #### 기본 템플릿
 ```
-안녕하세요, {{이름}} 고객님, LG전자입니다.
+안녕하세요, {{!이름}} 고객님, LG전자입니다.
 알림 신청하신 SKS Dining 예약이 오픈되었습니다.
 
-[시작일]: {{시작연도}}년 {{시작월}}월 {{시작일}}일
-[종료일]: {{종료연도}}년 {{종료월}}월 {{종료일}}일
-[예약 유형]: {{다이닝/음료}}
+[시작일]: {{!시작연도}}년 {{!시작월}}월 {{!시작일}}일
+[종료일]: {{!종료연도}}년 {{!종료월}}월 {{!종료일}}일
+[예약 유형]: {{!다이닝/음료}}
 
 [유의사항]
 *선착순으로 예약이 이루어지므로, 빠른 시간 내에 예약해 주세요.
@@ -551,17 +553,19 @@ LG전자 멤버십 앱
   "event_key": "reservation.open",
   "name": "SKS Dining 예약 오픈",
   "data_schema": {
-    "이름": { "type": "string", "required": true },
-    "시작연도": { "type": "string", "required": true },
-    "시작월": { "type": "string", "required": true },
-    "시작일": { "type": "string", "required": true },
-    "종료연도": { "type": "string", "required": true },
-    "종료월": { "type": "string", "required": true },
-    "종료일": { "type": "string", "required": true },
-    "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    "variables": {
+      "이름": { "type": "string", "required": true },
+      "시작연도": { "type": "string", "required": true },
+      "시작월": { "type": "string", "required": true },
+      "시작일": { "type": "string", "required": true },
+      "종료연도": { "type": "string", "required": true },
+      "종료월": { "type": "string", "required": true },
+      "종료일": { "type": "string", "required": true },
+      "다이닝/음료": { "type": "string", "required": true, "enum": ["다이닝", "음료"] }
+    }
   },
   "default_delay": 0,
-  "channel_types": ["push", "kakao"]
+  "target_subscription_types": ["ios_push", "android_push", "kakao"]
 }
 ```
 
@@ -572,12 +576,12 @@ LG전자 멤버십 앱
 #### 발송 조건
 - **시점**: 이용 완료 상태 변경 후 5시간
 - **대상**: 예약 당사자
-- **채널**: 푸시, 카카오 알림톡
+- **채널**: iOS 푸시, Android 푸시, 카카오 알림톡
 - **템플릿 코드**: 11715
 
 #### 기본 템플릿
 ```
-안녕하세요, {{이름}} 고객님. LG전자입니다.
+안녕하세요, {{!이름}} 고객님. LG전자입니다.
 
 고객님의 소중한 시간을 SKS Dining과 함께 해 주셔서
 대단히 감사합니다.
@@ -594,7 +598,6 @@ LG전자 멤버십 앱에서 의견 남기기
 #### 알림톡 특화 템플릿
 ```json
 {
-  "template_code": "11715",
   "title": "SKS Dining 만족도 조사",
   "message": "(기본 템플릿 내용)",
   "buttons": [
@@ -619,11 +622,12 @@ LG전자 멤버십 앱에서 의견 남기기
 {
   "event_key": "reservation.completed",
   "name": "SKS Dining 이용 완료",
-  "template_code": "11715",
   "data_schema": {
-    "이름": { "type": "string", "required": true }
+    "variables": {
+      "이름": { "type": "string", "required": true }
+    }
   },
   "default_delay": 18000,  // 5시간 = 18000초
-  "channel_types": ["push", "kakao"]
+  "target_subscription_types": ["ios_push", "android_push", "kakao"]
 }
 ```
