@@ -50,6 +50,7 @@ LG 멤버십 쿠폰 시스템은 회원 등급별로 다양한 혜택을 제공�
       "startDate": "2025-01-01T00:00:00Z", // 시작일
       "endDate": "2025-12-31T23:59:59Z", // 종료일
       "coupon": {
+        "id": "uuid-here", // 쿠폰 ID (베이스 쿠폰 ID, 외부 시스템 쿠폰만 null)
         "kind": "BESTSHOP_FREE_PARKING", // 쿠폰 종류
         "name": "베스트샵 무료 주차 2시간", // 쿠폰명
         "discountType": "PASS", // 할인 타입
@@ -203,7 +204,7 @@ export const MembershipGrade = {
         "startDate": "2025-01-01T00:00:00Z", // 시작일
         "endDate": "2025-12-31T23:59:59Z", // 종료일
         "coupon": {
-          "id": "550e8400-e29b-41d4-a716-446655440000", // 쿠폰 ID
+          "id": null, // 쿠폰 ID (외부 시스템 쿠폰은 null)
           "kind": "BESTSHOP_FREE_PARKING", // 쿠폰 종류
           "name": "베스트샵 무료 주차 2시간", // 쿠폰명
           "discountType": "PASS", // 할인 타입
@@ -213,7 +214,7 @@ export const MembershipGrade = {
         "reservation": null // 예약 정보
       },
       {
-        "sn": null, // 가상 쿠폰은 sn이 null
+        "sn": null, // 가상 쿠폰은 발급 시점엔 null
         "status": "ISSUED",
         "issuedAt": null,
         "redeemedAt": null,
@@ -230,10 +231,10 @@ export const MembershipGrade = {
         "reservation": null
       },
       {
-        "sn": null, // 가상 쿠폰
-        "status": "ISSUED",
-        "issuedAt": null,
-        "redeemedAt": null,
+        "sn": "LGC-2025-00123", // 사용 시 생성된 쿠폰 번호
+        "status": "REDEEMED",
+        "issuedAt": "2025-02-15T10:00:00Z",
+        "redeemedAt": "2025-02-15T10:00:00Z",
         "startDate": "2025-01-01T00:00:00Z",
         "endDate": "2026-12-31T23:59:59Z",
         "coupon": {
@@ -244,7 +245,9 @@ export const MembershipGrade = {
           "discountValue": "0",
           "maxDiscount": "0"
         },
-        "reservation": null
+        "reservation": {
+          "id": "990e8400-e29b-41d4-a716-446655440999" // 연결된 예약 ID
+        }
       }
     ]
   }
@@ -261,6 +264,7 @@ export const MembershipGrade = {
   {
     "list": [
       {
+        "id": "880e8400-e29b-41d4-a716-446655440003", // 쿠폰 ID
         "kind": "SKS_DINING_MEAL_DISCOUNT",
         "name": "SKS 다이닝 식사권",
         "description": "\"SKS로 완성하는 미식의 여정\"\n\nSKS Dining은...",
