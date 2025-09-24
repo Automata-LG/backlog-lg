@@ -43,21 +43,21 @@ LG 멤버십 쿠폰 시스템은 회원 등급별로 다양한 혜택을 제공�
 {
   "list": [
     {
-      "sn": "COUPON-123456", // 쿠폰 번호 (가상 쿠폰은 발급 시점엔 null)
+      "sn": "COUPON-123456", // nullable - 쿠폰 번호 (가상 쿠폰은 발급 시점엔 null)
       "status": "ISSUED", // 쿠폰 상태
-      "issuedAt": "2025-01-01T00:00:00Z", // 발급일
-      "redeemedAt": null, // 사용일
-      "startDate": "2025-01-01T00:00:00Z", // 시작일
-      "endDate": "2025-12-31T23:59:59Z", // 종료일
+      "issuedAt": "2025-01-01T00:00:00Z", // nullable - 발급일
+      "redeemedAt": null, // nullable - 사용일
+      "startDate": "2025-01-01T00:00:00Z", // nullable - 시작일
+      "endDate": "2025-12-31T23:59:59Z", // nullable - 종료일
       "coupon": {
-        "id": "uuid-here", // 쿠폰 ID (베이스 쿠폰 ID, 외부 시스템 쿠폰만 null)
+        "id": "uuid-here", // nullable - 쿠폰 ID (외부 시스템 쿠폰만 null)
         "kind": "BESTSHOP_FREE_PARKING", // 쿠폰 종류
         "name": "베스트샵 무료 주차 2시간", // 쿠폰명
         "discountType": "PASS", // 할인 타입
         "discountValue": "0", // 할인 값
         "maxDiscount": "0" // 최대 할인 금액
       },
-      "reservation": null // 예약 정보 (예약 연결 시 {id: "uuid"})
+      "reservation": null // nullable - 예약 정보 (예약 연결 시 {id: "uuid"})
     }
   ]
 }
@@ -199,36 +199,36 @@ export const MembershipGrade = {
       {
         "sn": "PARK-2025-001", // 쿠폰 번호 (외부 시스템 쿠폰)
         "status": "ISSUED", // 쿠폰 상태
-        "issuedAt": "2025-01-01T00:00:00Z", // 발급일
-        "redeemedAt": null, // 사용일
-        "startDate": "2025-01-01T00:00:00Z", // 시작일
-        "endDate": "2025-12-31T23:59:59Z", // 종료일
+        "issuedAt": "2025-01-01T00:00:00Z", // nullable - 발급일
+        "redeemedAt": null, // nullable - 사용일
+        "startDate": "2025-01-01T00:00:00Z", // nullable - 시작일
+        "endDate": "2025-12-31T23:59:59Z", // nullable - 종료일
         "coupon": {
-          "id": null, // 쿠폰 ID (외부 시스템 쿠폰은 null)
+          "id": null, // nullable - 쿠폰 ID
           "kind": "BESTSHOP_FREE_PARKING", // 쿠폰 종류
           "name": "베스트샵 무료 주차 2시간", // 쿠폰명
           "discountType": "PASS", // 할인 타입
           "discountValue": "0", // 할인 값
           "maxDiscount": "0" // 최대 할인 금액
         },
-        "reservation": null // 예약 정보
+        "reservation": null // nullable - 예약 정보
       },
       {
-        "sn": null, // 가상 쿠폰은 발급 시점엔 null
+        "sn": null, // nullable - 가상 쿠폰은 발급 시점엔 null
         "status": "ISSUED",
-        "issuedAt": null,
-        "redeemedAt": null,
-        "startDate": "2025-01-01T00:00:00Z", // 등급 시작일
-        "endDate": "2025-12-31T23:59:59Z", // 등급 종료일
+        "issuedAt": null, // nullable
+        "redeemedAt": null, // nullable
+        "startDate": "2025-01-01T00:00:00Z", // nullable - 등급 시작일
+        "endDate": "2025-12-31T23:59:59Z", // nullable - 등급 종료일
         "coupon": {
-          "id": "660e8400-e29b-41d4-a716-446655440001", // 쿠폰 ID
+          "id": "660e8400-e29b-41d4-a716-446655440001", // nullable - 쿠폰 ID
           "kind": "SKS_DINING_SIGNATURE_BEVERAGE_FREE",
           "name": "SKS 시그니처 음료",
           "discountType": "FREE",
           "discountValue": "0",
           "maxDiscount": "0"
         },
-        "reservation": null
+        "reservation": null // nullable
       },
       {
         "sn": "LGC-2025-00123", // 사용 시 생성된 쿠폰 번호
@@ -270,13 +270,13 @@ export const MembershipGrade = {
         "description": "\"SKS로 완성하는 미식의 여정\"\n\nSKS Dining은...",
         "images": ["https://example.com/image1.jpg", "https://example.com/image2.jpg"],
         "instructions": "•식사는 런치 시간대에만 운영되며...",
-        "cautions": "•예약 변경 및 취소는 방문 24시간 전까지 가능합니다.",
+        "cautions": "•예약 변경 및 취소는 방문 24시간 전까지 가능합니다.", // nullable - 주의사항
         "policy": {
-          "applicable_to": {
-            "display_text": "SKS 다이닝 레스토랑 이용 시",
+          "applicableTo": {
+            "displayText": "SKS 다이닝 레스토랑 이용 시",
             "rules": {
               "location": "SKS_DINING",
-              "usage_period": "MEMBERSHIP_YEAR"
+              "usagePeriod": "MEMBERSHIP_YEAR"
             }
           }
         },
