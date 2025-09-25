@@ -1091,14 +1091,14 @@ enum ReservationHostKind {
 |----------|------------|----------|
 | `401` | UNAUTHORIZED | JWT 토큰 없음 또는 만료 |
 | `FDE-C-002` | NOT_FOUND | 회원을 찾을 수 없음 (NewBest API에서 memberCi로 조회 실패) |
-| `FDE-A-002` | `[유효한 타임슬롯을 찾을 수 없습니다]` | 잘못된 타임슬롯 ID 또는 비활성화된 타임슬롯 |
+| `FDE-A-002` | `[유효한 방문 일시를 찾을 수 없습니다]` | 잘못된 타임슬롯 ID 또는 비활성화된 타임슬롯 |
 | `FDE-A-002` | `[현재 예약 가능한 시간이 아닙니다]` | 예약 오픈 시간 범위를 벗어남 (BATCH/SEQUENTIAL/GRADED 타입별 기준) |
 | `FDE-A-002` | `[{쿠폰명} 이용 횟수 초과 (X/Y회)]` | 연간 멤버십 쿠폰 사용 횟수 초과 |
 | `FDE-A-002` | `[필수 약관에 모두 동의해야 합니다]` | 필수 약관 미동의 |
-| `FDE-A-002` | `[이 컨텐츠는 {등급} 등급 이상의 회원만 예약할 수 있습니다]` | 최소 회원 등급 미달 (restrictionConfig.minMembershipGrade) |
-| `FDE-A-002` | `[그룹 인원은 {최소}명에서 {최대}명까지 가능합니다]` | minGroupSize ~ maxGroupSize 범위 초과 |
-| `FDE-A-002` | `[예약이 불가능합니다]` | FFD 시뮬레이션 결과 섹션/유닛 배치 불가능 |
-| `FDE-A-002` | `[수용 인원을 초과합니다]` | 타임슬롯 총 정원 초과 |
+| `FDE-A-002` | `[{등급} 등급 이상의 회원만 이용할 수 있습니다]` | 최소 회원 등급 미달 (restrictionConfig.minMembershipGrade) |
+| `FDE-A-002` | `[해당 예약은 {최소}명에서 {최대}명까지 이용 가능합니다]` | minGroupSize ~ maxGroupSize 범위 초과 |
+| `FDE-A-002` | `[예약이 불가합니다. 다시 확인해 주세요]` | FFD 시뮬레이션 결과 섹션/유닛 배치 불가능 |
+| `FDE-A-002` | `[예약 정원을 초과하였습니다]` | 타임슬롯 총 정원 초과 |
 | `FDE-C-003` | CONFLICT | Unique constraint 위반 (중복 데이터) |
 | `FDE-C-004` | CONFLICT | Foreign key constraint 위반 (잘못된 참조) |
 | `FDE-C-101` | INTERNAL_SERVER_ERROR | 데이터베이스 내부 에러 |
@@ -1159,8 +1159,8 @@ enum ReservationHostKind {
 | `BAD_REQUEST` | `유닛 배정 전에는 인원 변경이 불가능합니다. 예약을 취소 후 다시 생성해 주세요.` | 유닛 미배정 상태에서 groupSize 변경 시도 |
 | `FDE-A-002` | `[예약 가능 시간이 지났습니다]` | 타임슬롯 종료 시간 경과 (어드민용) |
 | `FDE-A-002` | `[현재 예약 가능한 시간이 아닙니다]` | 타임슬롯 변경 시 예약 오픈 시간 검증 실패 |
-| `FDE-A-002` | `[그룹 인원은 {최소}명에서 {최대}명까지 가능합니다]` | 인원 변경 시 범위 초과 |
-| `FDE-A-002` | `[예약이 불가능합니다]` | 타임슬롯/인원 변경 시 수용 불가 |
+| `FDE-A-002` | `[해당 예약은 {최소}명에서 {최대}명까지 이용 가능합니다]` | 인원 변경 시 범위 초과 |
+| `FDE-A-002` | `[예약이 불가합니다. 다시 확인해 주세요]` | 타임슬롯/인원 변경 시 수용 불가 |
 | `FDE-C-003` | CONFLICT | Unique constraint 위반 |
 | `FDE-C-004` | CONFLICT | Foreign key constraint 위반 |
 | `FDE-C-101` | INTERNAL_SERVER_ERROR | 데이터베이스 내부 에러 |
