@@ -53,6 +53,7 @@ LG 멤버십 쿠폰 시스템은 회원 등급별로 다양한 혜택을 제공�
         "id": "uuid-here", // nullable - 쿠폰 ID (외부 시스템 쿠폰만 null)
         "kind": "BESTSHOP_FREE_PARKING", // 쿠폰 종류
         "name": "베스트샵 무료 주차 2시간", // 쿠폰명
+        "displayName": "베스트샵 무료 주차권", // nullable - 화면 표시용 이름
         "discountType": "PASS", // 할인 타입
         "discountValue": "0", // 할인 값
         "maxDiscount": "0" // 최대 할인 금액
@@ -117,6 +118,55 @@ export const MembershipGrade = {
   AS05: 'AS05', // Silver (미구매)
 } as const;
 ```
+
+### Coupon 스키마
+
+데이터베이스의 Coupon 모델 정의:
+
+```prisma
+model Coupon {
+  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind          CouponKind
+  name          String             @db.VarChar(255)          // 쿠폰명
+  displayName   String?            @db.VarChar(255)          // 화면 표시용 이름 (선택적)
+  description   String                                       // 쿠폰 설명
+  images        String[]           @db.VarChar(2048)         // 이미지 URL 배열
+  instructions  String                                       // 사용 안내
+  cautions      String?                                      // 주의사항 (선택)
+  issuanceType  CouponIssuanceType
+  discountType  CouponDiscountType                          // AMOUNT, RATIO, PASS
+  discountValue Decimal            @default(0) @db.Decimal(19, 4)
+  maxDiscount   Decimal            @default(0) @db.Decimal(19, 4)
+  policy        Json               @default("{}")
+
+  startDate DateTime                                         // 쿠폰 시작일
+  endDate   DateTime                                         // 쿠폰 종료일
+
+  couponPools CouponPool[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map(name: "coupon")
+}
+```
+
+#### 필드 설명
+
+- **id**: 고유 식별자 (UUID)
+- **kind**: 쿠폰 종류 (CouponKind enum)
+- **name**: 쿠폰명
+- **displayName**: UI에 표시될 화면용 이름 (nullable, name과 병행 사용)
+- **description**: 쿠폰에 대한 상세 설명
+- **images**: 쿠폰 이미지 URL 배열
+- **instructions**: 쿠폰 사용 방법 안내
+- **cautions**: 주의사항 (선택 사항)
+- **issuanceType**: 발급 타입
+- **discountType**: 할인 타입 (금액/비율/패스)
+- **discountValue**: 할인 값
+- **maxDiscount**: 최대 할인 금액
+- **policy**: 추가 정책 정보 (JSON)
+- **startDate/endDate**: 쿠폰 유효 기간
 
 ## 에러 처리
 
@@ -207,6 +257,7 @@ export const MembershipGrade = {
           "id": null, // nullable - 쿠폰 ID
           "kind": "BESTSHOP_FREE_PARKING", // 쿠폰 종류
           "name": "베스트샵 무료 주차 2시간", // 쿠폰명
+          "displayName": "베스트샵 무료 주차권", // nullable - 화면 표시용 이름
           "discountType": "PASS", // 할인 타입
           "discountValue": "0", // 할인 값
           "maxDiscount": "0" // 최대 할인 금액
@@ -223,7 +274,8 @@ export const MembershipGrade = {
         "coupon": {
           "id": "660e8400-e29b-41d4-a716-446655440001", // nullable - 쿠폰 ID
           "kind": "SKS_DINING_SIGNATURE_BEVERAGE_FREE",
-          "name": "SKS 시그니처 음료",
+          "name": "SKS 시그니처 음료", // 쿠폰명
+          "displayName": "SKS 시그니처 음료 무료", // nullable - 화면 표시용 이름
           "discountType": "FREE",
           "discountValue": "0",
           "maxDiscount": "0"
@@ -240,7 +292,8 @@ export const MembershipGrade = {
         "coupon": {
           "id": "770e8400-e29b-41d4-a716-446655440002", // 쿠폰 ID
           "kind": "PREMIUM_LOUNGE_ACCESS",
-          "name": "프리미엄 라운지 이용권",
+          "name": "프리미엄 라운지 이용권", // 쿠폰명
+          "displayName": "프리미엄 라운지", // nullable - 화면 표시용 이름
           "discountType": "PASS",
           "discountValue": "0",
           "maxDiscount": "0"
@@ -266,7 +319,8 @@ export const MembershipGrade = {
       {
         "id": "880e8400-e29b-41d4-a716-446655440003", // 쿠폰 ID
         "kind": "SKS_DINING_MEAL_DISCOUNT",
-        "name": "SKS 다이닝 식사권",
+        "name": "SKS 다이닝 식사권", // 쿠폰명
+        "displayName": "SKS 다이닝 할인", // nullable - 화면 표시용 이름
         "description": "\"SKS로 완성하는 미식의 여정\"\n\nSKS Dining은...",
         "images": ["https://example.com/image1.jpg", "https://example.com/image2.jpg"],
         "instructions": "•식사는 런치 시간대에만 운영되며...",
