@@ -132,7 +132,7 @@ model Coupon {
   displayName   String?            @db.VarChar(255)          // 화면 표시용 이름 (선택적)
   description   String?                                      // 쿠폰 설명 (선택적)
   images        String[]           @db.VarChar(2048)         // 이미지 URL 배열
-  instructions  String                                       // 사용 안내
+  instructions  String?                                      // 사용 안내 (선택적)
   cautions      String?                                      // 주의사항 (선택)
   issuanceType  CouponIssuanceType
   discountType  CouponDiscountType                          // AMOUNT, RATIO, PASS
@@ -160,7 +160,7 @@ model Coupon {
 - **displayName**: UI에 표시될 화면용 이름 (nullable, name과 병행 사용)
 - **description**: 쿠폰에 대한 상세 설명 (nullable)
 - **images**: 쿠폰 이미지 URL 배열
-- **instructions**: 쿠폰 사용 방법 안내
+- **instructions**: 쿠폰 사용 방법 안내 (nullable)
 - **cautions**: 주의사항 (선택 사항)
 - **issuanceType**: 발급 타입
 - **discountType**: 할인 타입 (금액/비율/패스)
