@@ -54,6 +54,7 @@ LG 멤버십 쿠폰 시스템은 회원 등급별로 다양한 혜택을 제공�
         "kind": "BESTSHOP_FREE_PARKING", // 쿠폰 종류
         "name": "베스트샵 무료 주차 2시간", // 쿠폰명
         "displayName": "베스트샵 무료 주차권", // nullable - 화면 표시용 이름
+        "description": "베스트샵 방문 시 사용 가능한 2시간 무료 주차권", // nullable - 쿠폰 설명
         "discountType": "PASS", // 할인 타입
         "discountValue": "0", // 할인 값
         "maxDiscount": "0" // 최대 할인 금액
@@ -129,7 +130,7 @@ model Coupon {
   kind          CouponKind
   name          String             @db.VarChar(255)          // 쿠폰명
   displayName   String?            @db.VarChar(255)          // 화면 표시용 이름 (선택적)
-  description   String                                       // 쿠폰 설명
+  description   String?                                      // 쿠폰 설명 (선택적)
   images        String[]           @db.VarChar(2048)         // 이미지 URL 배열
   instructions  String                                       // 사용 안내
   cautions      String?                                      // 주의사항 (선택)
@@ -157,7 +158,7 @@ model Coupon {
 - **kind**: 쿠폰 종류 (CouponKind enum)
 - **name**: 쿠폰명
 - **displayName**: UI에 표시될 화면용 이름 (nullable, name과 병행 사용)
-- **description**: 쿠폰에 대한 상세 설명
+- **description**: 쿠폰에 대한 상세 설명 (nullable)
 - **images**: 쿠폰 이미지 URL 배열
 - **instructions**: 쿠폰 사용 방법 안내
 - **cautions**: 주의사항 (선택 사항)
@@ -258,6 +259,7 @@ model Coupon {
           "kind": "BESTSHOP_FREE_PARKING", // 쿠폰 종류
           "name": "베스트샵 무료 주차 2시간", // 쿠폰명
           "displayName": "베스트샵 무료 주차권", // nullable - 화면 표시용 이름
+          "description": null, // nullable - 쿠폰 설명
           "discountType": "PASS", // 할인 타입
           "discountValue": "0", // 할인 값
           "maxDiscount": "0" // 최대 할인 금액
@@ -276,6 +278,7 @@ model Coupon {
           "kind": "SKS_DINING_SIGNATURE_BEVERAGE_FREE",
           "name": "SKS 시그니처 음료", // 쿠폰명
           "displayName": "SKS 시그니처 음료 무료", // nullable - 화면 표시용 이름
+          "description": null, // nullable - 쿠폰 설명
           "discountType": "FREE",
           "discountValue": "0",
           "maxDiscount": "0"
@@ -294,6 +297,7 @@ model Coupon {
           "kind": "PREMIUM_LOUNGE_ACCESS",
           "name": "프리미엄 라운지 이용권", // 쿠폰명
           "displayName": "프리미엄 라운지", // nullable - 화면 표시용 이름
+          "description": null, // nullable - 쿠폰 설명
           "discountType": "PASS",
           "discountValue": "0",
           "maxDiscount": "0"
@@ -321,7 +325,7 @@ model Coupon {
         "kind": "SKS_DINING_MEAL_DISCOUNT",
         "name": "SKS 다이닝 식사권", // 쿠폰명
         "displayName": "SKS 다이닝 할인", // nullable - 화면 표시용 이름
-        "description": "\"SKS로 완성하는 미식의 여정\"\n\nSKS Dining은...",
+        "description": "\"SKS로 완성하는 미식의 여정\"\n\nSKS Dining은...", // nullable - 쿠폰 설명
         "images": ["https://example.com/image1.jpg", "https://example.com/image2.jpg"],
         "instructions": "•식사는 런치 시간대에만 운영되며...",
         "cautions": "•예약 변경 및 취소는 방문 24시간 전까지 가능합니다.", // nullable - 주의사항
