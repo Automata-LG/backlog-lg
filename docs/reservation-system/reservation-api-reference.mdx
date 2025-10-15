@@ -1097,6 +1097,7 @@ enum ReservationHostKind {
 | `403` | `FDE-A-002 [{쿠폰명} 이용 횟수 초과 (X/Y회)]` | 연간 멤버십 쿠폰 사용 횟수 초과 |
 | `403` | `FDE-A-002 [필수 약관에 모두 동의해야 합니다]` | 필수 약관 미동의 |
 | `403` | `FDE-A-002 [{등급} 등급 이상의 회원만 이용할 수 있습니다]` | 최소 회원 등급 미달 (restrictionConfig.minMembershipGrade) |
+| `403` | `FDE-A-002 [같은 날에는 최대 {N}회까지만 예약 가능합니다]` | 같은 이용일에 중복 예약 시도 (restrictionConfig.maxReservationPerDay) |
 | `403` | `FDE-A-002 [해당 예약은 {최소}명에서 {최대}명까지 이용 가능합니다]` | minGroupSize ~ maxGroupSize 범위 초과 |
 | `403` | `FDE-A-002 [예약이 불가합니다. 다시 확인해 주세요]` | FFD 시뮬레이션 결과 섹션/유닛 배치 불가능 |
 | `403` | `FDE-A-002 [예약 정원을 초과하였습니다]` | 타임슬롯 총 정원 초과 |
