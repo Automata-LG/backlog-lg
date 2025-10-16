@@ -4,16 +4,18 @@ on:
   # 1. 트리거 설정: PM이 GitHub Actions 탭에서 수동으로 실행하도록 설정합니다.
   workflow_dispatch:
     inputs:
-      parent_issue_id: 212
+      parent_issue_id: # 필수 수정: 콜론만 남기고 아래 속성 정의
         description: '복제된 TC들이 연결될 Target Repo의 상위(Parent) 이슈 번호 (예: 212)'
         required: true
-      source_repo: TC-Master_LGE-APP
+        default: '212' # 기본값은 필수 아님
+      source_repo: # 필수 수정: 콜론만 남김
         description: '마스터 TC가 있는 Source Repo 전체 경로 (예: Automata-LG/TC-Master_LGE-APP)'
         required: true
         default: 'Automata-LG/TC-Master_LGE-APP' 
-      target_project_url: https://github.com/orgs/Automata-LG/projects/1/views/1
+      target_project_url: # 필수 수정: 콜론만 남김
         description: '복제된 이슈를 추가할 LG_SM Project Board의 URL'
         required: true
+        default: 'https://github.com/orgs/Automata-LG/projects/1/views/1' # 기본값은 필수 아님
 
 jobs:
   clone_and_nest:
@@ -76,7 +78,7 @@ jobs:
           NEW_BODY="## [마스터 TC 복제]\n\n**상위(Parent) 이슈:** #${PARENT_ISSUE_ID}\n\n---\n\n${BODY}"
           
           # 6. 라벨 설정: 'QA' (Issue Type), 'App' (도메인) 라벨을 추가합니다.
-          NEW_LABELS="QA, App
+          NEW_LABELS="QA, App" # <--- 필수 수정: 닫는 따옴표 추가
           
           # 7. 새로운 이슈를 Target Repo(backlog-lg)에 생성 (이슈 복제)
           echo "   -> 복제 중: $NEW_TITLE"
