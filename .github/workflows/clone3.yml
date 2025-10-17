@@ -21,14 +21,14 @@ jobs:
     runs-on: ubuntu-latest
 
     # ✅ 권한 설정 (GH CLI 작업에 필수)
-    permissions:
-      contents: read
-      issues: write
-      projects: write # <--- 이 부분이 jobs 레벨이 아닌 permissions 하위 레벨에 맞게 들여쓰기 되어야 합니다.
-      pull-requests: write
-      id-token: write 
+  permissions:
+    contents: read
+    issues: write
+    projects: write
+    pull-requests: write
+    id-token: write 
       
-    steps:
+  steps:
     - name: 코드 체크아웃 (필수 단계)
       uses: actions/checkout@v4
       
