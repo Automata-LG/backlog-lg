@@ -24,32 +24,35 @@ jobs:
     permissions:
       contents: read
       issues: write
-      pull-requests: write # 혹시 모를 Project Board의 PR 항목 접근을 위해 포함
+      projects: write
+      pull-requests: write
+      id-token: write # 인증 관련 보안 강화 (필요한 경우)
       
     steps:
     - name: 코드 체크아웃 (필수 단계)
       uses: actions/checkout@v4
       
-    - name: GitHub CLI 및 환경 변수 설정
-      # Secret 토큰과 입력값을 환경 변수로 설정
+    # 🚨 수정: gh 명령어 사용을 위해 github/cli 액션을 사용하고 토큰을 명시적으로 전달
+    - name: GitHub CLI 인증 및 환경 변수 설정
+      uses: cli/cli-action@v1 # GitHub CLI Action 사용
+      with:
+        # PROJECT_ACCESS_TOKEN Secret을 GH_TOKEN 환경 변수로 설정
+        token: ${{ secrets.PROJECT_ACCESS_TOKEN }} 
+
+    - name: 환경 변수 정의 및 로직 실행
+      # 모든 변수를 run 스텝의 env로 통합하여 관리
       env:
-        GH_TOKEN: ${{ secrets.PROJECT_ACCESS_TOKEN }}
+        GH_TOKEN: ${{ secrets.PROJECT_ACCESS_TOKEN }} # 혹시 모를 경우를 대비하여 중복 설정
         SOURCE_REPO: ${{ github.event.inputs.source_repo }}
         TARGET_REPO: ${{ github.repository }}
-        
-      run: |
-        echo "Source Repo: $SOURCE_REPO"
-        echo "Target Repo (복제 대상): $TARGET_REPO"
-        
-    - name: 이슈 복제, 하위 이슈 연결 및 프로젝트 추가 로직 실행
-      env:
         PARENT_ISSUE_ID: ${{ github.event.inputs.parent_issue_id }}
         PROJECT_URL: ${{ github.event.inputs.target_project_url }}
-        
+
       run: |
         echo "--- 4. 마스터 TC 목록 조회 (Source Repo에서) ---"
+        echo "Source Repo: $SOURCE_REPO"
+        
         # MASTER_ISSUES 변수 정의 시 줄 바꿈 없이 한 줄로 처리하여
-        # '줄 계속 문자(\)' 오류를 완전히 제거합니다.
         MASTER_ISSUES=$(gh issue list --repo "$SOURCE_REPO" --label "TC-Master" --state open --json title,body --jq '.[] | @base64')
 
         if [ -z "$MASTER_ISSUES" ]; then
@@ -57,7 +60,7 @@ jobs:
           exit 0
         fi
         
-        echo "--- 5. 복제, 하위 이슈 연결 및 프로젝트 추가 시작 ---"
+        echo "--- 5. 복제, 하위 이슈 연결 및 프로젝트 추가 시작 (총 $(echo "$MASTER_ISSUES" | wc -l) 건) ---"
         
         # 이슈 데이터를 한 줄씩 읽어와 처리
         echo "$MASTER_ISSUES" | while read -r ISSUE_DATA; do
@@ -72,7 +75,7 @@ jobs:
           NEW_TITLE="${TITLE}"
           NEW_BODY="## [마스터 TC 복제]\n\n**상위(Parent) 이슈:** #${PARENT_ISSUE_ID}\n\n---\n\n${BODY}"
           
-          # 6. 라벨 설정 (닫는 따옴표와 쉼표 구분자 확인)
+          # 6. 라벨 설정
           NEW_LABELS="QA, App" 
           
           # 7. 새로운 이슈를 Target Repo(backlog-lg)에 생성 (이슈 복제)
@@ -87,12 +90,12 @@ jobs:
           echo "   ✅ 새 이슈 생성 완료: #${NEW_ISSUE_NUMBER}"
 
           # 8. 새로 생성된 이슈를 Project Board에 추가
-          gh project item add $NEW_ISSUE_NUMBER \
+          gh project item add "$NEW_ISSUE_NUMBER" \
             --repo "$TARGET_REPO" \
             --url "$PROJECT_URL"
 
           # 9. Parent Issue와의 연결 (Relates to)
-          gh issue link $NEW_ISSUE_NUMBER $PARENT_ISSUE_ID \
+          gh issue link "$NEW_ISSUE_NUMBER" "$PARENT_ISSUE_ID" \
             --repo "$TARGET_REPO" \
             --add "relates to" 
 
