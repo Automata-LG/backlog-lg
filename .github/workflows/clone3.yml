@@ -24,7 +24,7 @@ jobs:
     permissions:
       contents: read
       issues: write
-      projects: write
+      projects: write # <--- 이 부분이 jobs 레벨이 아닌 permissions 하위 레벨에 맞게 들여쓰기 되어야 합니다.
       pull-requests: write
       id-token: write 
       
