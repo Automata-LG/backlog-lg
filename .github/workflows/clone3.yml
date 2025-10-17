@@ -143,47 +143,50 @@ jobs:
             
             echo "  ✅ Added to project board"
             
-            # 상위 이슈와 연결 (relates to)
-            echo "  🔗 Linking to parent issue #$PARENT_ISSUE_ID..."
+            # 상위 이슈와 sub-issue 관계 설정
+            echo "  🔗 Setting up parent-child relationship..."
             
             # Parent Issue의 Node ID 가져오기
-            PARENT_ISSUE_ID_NODE=$(gh api graphql -f query='
-              query($owner: String!, $repo: String!, $number: Int!) {
-                repository(owner: $owner, name: $repo) {
-                  issue(number: $number) {
-                    id
-                  }
-                }
-              }' -f owner="$(echo $TARGET_REPO | cut -d'/' -f1)" \
-                 -f repo="$(echo $TARGET_REPO | cut -d'/' -f2)" \
-                 -F number="$PARENT_ISSUE_ID" \
-                 --jq '.data.repository.issue.id')
+            PARENT_NODE_ID=$(gh issue view "$PARENT_ISSUE_ID" \
+              --repo "$TARGET_REPO" \
+              --json id \
+              --jq '.id')
             
-            # 이슈 간 관계 연결
-            gh api graphql -f query='
-              mutation($subjectId: ID!, $objectId: ID!) {
-                updateIssue(input: {
-                  id: $subjectId,
-                  linkedIssues: {
-                    add: [{
-                      issueId: $objectId,
-                      type: RELATES_TO
-                    }]
+            echo "  📝 Parent Issue Node ID: $PARENT_NODE_ID"
+            echo "  📝 New Issue Node ID: $NEW_ISSUE_ID"
+            
+            # GraphQL mutation으로 sub-issue 추가
+            gh api graphql \
+              -H "GraphQL-Features: sub_issues" \
+              -f query="
+                mutation addSubIssue {
+                  addSubIssue(input: {
+                    issueId: \"$PARENT_NODE_ID\",
+                    subIssueId: \"$NEW_ISSUE_ID\"
+                  }) {
+                    issue {
+                      title
+                      number
+                    }
+                    subIssue {
+                      title
+                      number
+                    }
                   }
-                }) {
-                  issue {
-                    number
-                  }
-                }
-              }' -f subjectId="$NEW_ISSUE_ID" -f objectId="$PARENT_ISSUE_ID_NODE" 2>/dev/null || {
-              echo "  ⚠️ Could not create relates-to link (may require GitHub Enterprise)"
-              echo "  💡 Adding comment as alternative..."
+                }" && {
+              echo "  ✅ Successfully added as sub-issue to #$PARENT_ISSUE_ID"
+            } || {
+              echo "  ⚠️ Failed to create parent-child relationship via API"
+              echo "  💡 Adding comment as fallback..."
               gh issue comment "$NEW_ISSUE_NUMBER" \
                 --repo "$TARGET_REPO" \
-                --body "Related to #$PARENT_ISSUE_ID"
+                --body "🔗 Related to parent issue: #$PARENT_ISSUE_ID"
+              gh issue comment "$PARENT_ISSUE_ID" \
+                --repo "$TARGET_REPO" \
+                --body "✅ Cloned from $SOURCE_REPO#$ISSUE_NUMBER → #$NEW_ISSUE_NUMBER"
             }
             
-            echo "  ✅ Linked to parent issue"
+            echo "  ✅ Parent-child relationship established"
             echo ""
             
             # API Rate Limit 방지를 위한 짧은 대기
