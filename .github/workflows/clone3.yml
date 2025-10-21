@@ -8,6 +8,11 @@ on:
         required: true
         default: '212'
         type: string
+      source_label:
+        description: '복제할 이슈의 레이블 (이 레이블을 가진 이슈만 복제)'
+        required: true
+        default: '메인'
+        type: string
       source_repo:
         description: 'Source Repository (복제할 이슈가 있는 레포지토리)'
         required: true
@@ -66,23 +71,25 @@ jobs:
           SOURCE_REPO="${{ inputs.source_repo }}"
           PARENT_ISSUE_ID="${{ inputs.parent_issue_id }}"
           TARGET_REPO="${{ github.repository }}"
+          SOURCE_LABEL="${{ inputs.source_label }}"
           
           echo "📋 Source Repository: $SOURCE_REPO"
           echo "🎯 Target Repository: $TARGET_REPO"
           echo "🔗 Parent Issue ID: $PARENT_ISSUE_ID"
+          echo "🏷️  Source Label: $SOURCE_LABEL"
           echo "📊 Project ID: $PROJECT_ID"
           echo ""
           
-          # Source Repository에서 open 상태의 이슈 조회
-          echo "🔍 Fetching open issues from source repository..."
-          ISSUES=$(gh issue list --repo "$SOURCE_REPO" --state open --json number,title,body --limit 1000)
+          # Source Repository에서 특정 레이블을 가진 open 상태의 이슈 조회
+          echo "🔍 Fetching open issues with label '$SOURCE_LABEL' from source repository..."
+          ISSUES=$(gh issue list --repo "$SOURCE_REPO" --state open --label "$SOURCE_LABEL" --json number,title,body --limit 1000)
           
           ISSUE_COUNT=$(echo "$ISSUES" | jq '. | length')
-          echo "📊 Found $ISSUE_COUNT open issues"
+          echo "📊 Found $ISSUE_COUNT open issues with label '$SOURCE_LABEL'"
           echo ""
           
           if [ "$ISSUE_COUNT" -eq 0 ]; then
-            echo "⚠️ No open issues found in source repository"
+            echo "⚠️ No open issues found with label '$SOURCE_LABEL' in source repository"
             exit 0
           fi
           
