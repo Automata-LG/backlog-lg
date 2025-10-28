@@ -111,13 +111,16 @@ jobs:
               PLATFORM_TITLE="$PLATFORM $ISSUE_TITLE"
               
               # 새 이슈 본문 생성 (상위 이슈 정보 포함)
-              NEW_BODY="**Original Issue:** $SOURCE_REPO#$ISSUE_NUMBER
+              NEW_BODY=$(cat << EOF
+**Original Issue:** $SOURCE_REPO#$ISSUE_NUMBER
 **Parent Issue:** #$PARENT_ISSUE_ID
 **Platform:** $PLATFORM
 
 ---
 
-$ISSUE_BODY"
+$ISSUE_BODY
+EOF
+)
               
               # Target Repository에 새 이슈 생성
               echo "    ➡️ Creating new issue in target repository..."
