@@ -102,12 +102,12 @@ jobs:
             for PLATFORM in "IOS" "AOS"; do
               echo "  🔄 Creating $PLATFORM version..."
               
-              PLATFORM_TITLE="$PLATFORM $ISSUE_TITLE"
+              PLATFORM_TITLE="[$PLATFORM] $ISSUE_TITLE"
               
               TEMP_BODY_FILE=$(mktemp)
               printf "**Original Issue:** %s#%s\n" "$SOURCE_REPO" "$ISSUE_NUMBER" > "$TEMP_BODY_FILE"
               printf "**Parent Issue:** #%s\n" "$PARENT_ISSUE_ID" >> "$TEMP_BODY_FILE"
-              printf "**Platform:** %s\n\n" "$PLATFORM" >> "$TEMP_BODY_FILE"
+              printf "**Platform:** [%s]\n\n" "$PLATFORM" >> "$TEMP_BODY_FILE"
               printf -- "---\n\n" >> "$TEMP_BODY_FILE"
               printf "%s\n" "$ISSUE_BODY" >> "$TEMP_BODY_FILE"
               
