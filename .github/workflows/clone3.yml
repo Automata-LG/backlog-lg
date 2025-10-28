@@ -42,7 +42,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PROJECT_ACCESS_TOKEN }}
         run: |
-          # Project URL에서 프로젝트 번호 추출
           PROJECT_URL="${{ inputs.target_project_url }}"
           PROJECT_NUMBER=$(echo $PROJECT_URL | grep -oP 'projects/\K\d+')
           ORG_NAME=$(echo $PROJECT_URL | grep -oP 'orgs/\K[^/]+')
@@ -50,7 +49,6 @@ jobs:
           echo "Project Number: $PROJECT_NUMBER"
           echo "Organization: $ORG_NAME"
           
-          # Project Node ID 조회
           PROJECT_ID=$(gh api graphql -f query='
             query($org: String!, $number: Int!) {
               organization(login: $org) {
@@ -80,7 +78,6 @@ jobs:
           echo "📊 Project ID: $PROJECT_ID"
           echo ""
           
-          # Source Repository에서 특정 레이블을 가진 open 상태의 이슈 조회
           echo "🔍 Fetching open issues with label '$SOURCE_LABEL' from source repository..."
           ISSUES=$(gh issue list --repo "$SOURCE_REPO" --state open --label "$SOURCE_LABEL" --json number,title,body --limit 1000)
           
@@ -93,7 +90,6 @@ jobs:
             exit 0
           fi
           
-          # 각 이슈를 반복 처리
           echo "$ISSUES" | jq -c '.[]' | while read -r issue; do
             ISSUE_NUMBER=$(echo "$issue" | jq -r '.number')
             ISSUE_TITLE=$(echo "$issue" | jq -r '.title')
@@ -103,37 +99,30 @@ jobs:
             echo "📌 Processing Issue #$ISSUE_NUMBER: $ISSUE_TITLE"
             echo ""
             
-            # 플랫폼별로 2개의 이슈 생성 (IOS, AOS)
             for PLATFORM in "IOS" "AOS"; do
               echo "  🔄 Creating $PLATFORM version..."
               
-              # 플랫폼별 제목 생성
               PLATFORM_TITLE="$PLATFORM $ISSUE_TITLE"
               
-              # 새 이슈 본문 생성 (상위 이슈 정보 포함)
-              NEW_BODY=$(cat << EOF
-**Original Issue:** $SOURCE_REPO#$ISSUE_NUMBER
-**Parent Issue:** #$PARENT_ISSUE_ID
-**Platform:** $PLATFORM
-
----
-
-$ISSUE_BODY
-EOF
-)
+              TEMP_BODY_FILE=$(mktemp)
+              printf "**Original Issue:** %s#%s\n" "$SOURCE_REPO" "$ISSUE_NUMBER" > "$TEMP_BODY_FILE"
+              printf "**Parent Issue:** #%s\n" "$PARENT_ISSUE_ID" >> "$TEMP_BODY_FILE"
+              printf "**Platform:** %s\n\n" "$PLATFORM" >> "$TEMP_BODY_FILE"
+              printf -- "---\n\n" >> "$TEMP_BODY_FILE"
+              printf "%s\n" "$ISSUE_BODY" >> "$TEMP_BODY_FILE"
               
-              # Target Repository에 새 이슈 생성
               echo "    ➡️ Creating new issue in target repository..."
               NEW_ISSUE_URL=$(gh issue create \
                 --repo "$TARGET_REPO" \
                 --title "$PLATFORM_TITLE" \
-                --body "$NEW_BODY" \
+                --body-file "$TEMP_BODY_FILE" \
                 --label "QA,App")
+              
+              rm "$TEMP_BODY_FILE"
               
               NEW_ISSUE_NUMBER=$(echo "$NEW_ISSUE_URL" | grep -oP '\d+$')
               echo "    ✅ Created Issue #$NEW_ISSUE_NUMBER ($PLATFORM): $NEW_ISSUE_URL"
               
-              # 새 이슈의 Node ID 가져오기
               echo "    🔍 Getting Node ID for new issue..."
               NEW_ISSUE_ID=$(gh api graphql -f query='
                 query($owner: String!, $repo: String!, $number: Int!) {
@@ -149,7 +138,6 @@ EOF
               
               echo "    📝 Issue Node ID: $NEW_ISSUE_ID"
               
-              # Project Board에 이슈 추가
               echo "    📊 Adding issue to project board..."
               gh api graphql -f query='
                 mutation($project: ID!, $item: ID!) {
@@ -162,10 +150,8 @@ EOF
               
               echo "    ✅ Added to project board"
               
-              # 상위 이슈와 sub-issue 관계 설정
               echo "    🔗 Setting up parent-child relationship..."
               
-              # Parent Issue의 Node ID 가져오기
               PARENT_NODE_ID=$(gh issue view "$PARENT_ISSUE_ID" \
                 --repo "$TARGET_REPO" \
                 --json id \
@@ -174,7 +160,6 @@ EOF
               echo "    📝 Parent Issue Node ID: $PARENT_NODE_ID"
               echo "    📝 New Issue Node ID: $NEW_ISSUE_ID"
               
-              # GraphQL mutation으로 sub-issue 추가
               gh api graphql \
                 -H "GraphQL-Features: sub_issues" \
                 -f query="
@@ -208,7 +193,6 @@ EOF
               echo "    ✅ Parent-child relationship established"
               echo ""
               
-              # API Rate Limit 방지를 위한 짧은 대기
               sleep 2
             done
             
